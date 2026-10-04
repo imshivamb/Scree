@@ -16,6 +16,7 @@ export {
 export {
   createCubeTarget,
   createCylinderTarget,
+  createDustTarget,
   createHelixTarget,
   createProceduralTarget,
   createPyramidTarget,

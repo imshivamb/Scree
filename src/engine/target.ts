@@ -3,6 +3,7 @@ export {
   buildParticleTarget,
   createCubeTarget,
   createCylinderTarget,
+  createDustTarget,
   createHelixTarget,
   createPyramidTarget,
   createImageTarget,

@@ -6,7 +6,12 @@ import {
   type RecordOptions,
   type SnapshotOptions,
 } from "./export";
-import { DEFAULT_MATCH, MatchCache, type MatchStrategy } from "./match";
+import {
+  DEFAULT_MATCH,
+  MatchCache,
+  type MatchCompute,
+  type MatchStrategy,
+} from "./match";
 import {
   DEFAULT_STYLE_CONFIGS,
   mergeStyleConfig,
@@ -623,6 +628,41 @@ export class Scree {
   /** The current frame as a PNG, at any size. */
   snapshot(options: SnapshotOptions = {}): Promise<Blob> {
     return snapshotFrame(this, this.progress, options);
+  }
+
+  /**
+   * Work out the pairing for `from → to` ahead of time so the morph starts
+   * instantly. Pass `compute` to run it off the main thread (e.g. in a Worker).
+   */
+  async preloadMatch(
+    from: string,
+    to: string,
+    options: { match?: MatchStrategy; compute?: MatchCompute } = {},
+  ): Promise<void> {
+    const source = this.displayedArrangement(from);
+    const destination = this.targets.get(to);
+    if (!source || !destination) {
+      throw new Error(`Unknown morph target "${source ? to : from}"`);
+    }
+    const strategy = options.match ?? this.match;
+    if (this.matches.has(source, destination, strategy)) return;
+    if (!options.compute) {
+      this.matches.get(source, destination, strategy);
+      return;
+    }
+    const matched = await options.compute(source, destination, strategy);
+    if (matched.count !== destination.count) {
+      throw new Error("A preloaded match must keep the particle count");
+    }
+    this.matches.set(source, destination, strategy, matched);
+  }
+
+  /** Forget a target. The one on screen cannot be removed. */
+  removeTarget(id: string): void {
+    if (id === this.activeTarget || id === this.fieldDestinationId) return;
+    this.targets.delete(id);
+    this.targetScales.delete(id);
+    this.replacedFrom.delete(id);
   }
 
   hasTarget(id: string): boolean {

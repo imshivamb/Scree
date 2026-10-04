@@ -73,6 +73,13 @@ export function matchTargets(
   }
 }
 
+/** Computes a pairing somewhere else (e.g. a Web Worker) and resolves with it. */
+export type MatchCompute = (
+  source: ParticleTarget,
+  destination: ParticleTarget,
+  strategy: MatchStrategy,
+) => Promise<ParticleTarget>;
+
 /** Remembers each (source, destination, strategy) pairing so replays are free. */
 export class MatchCache {
   private readonly pairs = new WeakMap<
@@ -101,5 +108,29 @@ export class MatchCache {
     const matched = matchTargets(source, destination, strategy);
     byStrategy.set(strategy, matched);
     return matched;
+  }
+
+  has(source: ParticleTarget, destination: ParticleTarget, strategy: MatchStrategy): boolean {
+    return source === destination || Boolean(this.pairs.get(source)?.get(destination)?.has(strategy));
+  }
+
+  /** Store a pairing computed elsewhere. */
+  set(
+    source: ParticleTarget,
+    destination: ParticleTarget,
+    strategy: MatchStrategy,
+    matched: ParticleTarget,
+  ): void {
+    let byDestination = this.pairs.get(source);
+    if (!byDestination) {
+      byDestination = new WeakMap();
+      this.pairs.set(source, byDestination);
+    }
+    let byStrategy = byDestination.get(destination);
+    if (!byStrategy) {
+      byStrategy = new Map();
+      byDestination.set(destination, byStrategy);
+    }
+    byStrategy.set(strategy, matched);
   }
 }

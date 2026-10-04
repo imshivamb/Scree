@@ -41,9 +41,17 @@ export function frameCount(timing: ClipTiming): number {
   return Math.max(1, Math.round(total * timing.fps));
 }
 
+export function clipSeconds(timing: Omit<ClipTiming, "fps">): number {
+  return timing.holdStartSeconds + timing.durationSeconds + timing.holdEndSeconds;
+}
+
 /** Progress at frame `index`: hold at 0, ease 0 → 1 (same curve as playback), hold at 1. */
 export function progressAtFrame(index: number, timing: ClipTiming): number {
-  const time = index / timing.fps;
+  return progressAtTime(index / timing.fps, timing);
+}
+
+/** Progress at `time` seconds into a clip — what a preview should show. */
+export function progressAtTime(time: number, timing: Omit<ClipTiming, "fps">): number {
   const local = (time - timing.holdStartSeconds) / Math.max(timing.durationSeconds, 1e-6);
   const linear = Math.min(1, Math.max(0, local));
   return linear * linear * (3 - 2 * linear);

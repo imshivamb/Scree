@@ -1,6 +1,12 @@
 export { createScree, Scree } from "./scene";
 export type { MorphToOptions, ScreeOptions, TransitionOptions } from "./scene";
-export { EXPORT_ASPECTS, EXPORT_QUALITIES, exportSize } from "./export";
+export {
+  clipSeconds,
+  EXPORT_ASPECTS,
+  EXPORT_QUALITIES,
+  exportSize,
+  progressAtTime,
+} from "./export";
 export type {
   ExportAspect,
   ExportFormat,
@@ -9,7 +15,8 @@ export type {
   SnapshotOptions,
 } from "./export";
 export { DEFAULT_MATCH, isMatchStrategy, MATCH_STRATEGIES } from "./match";
-export type { MatchStrategy } from "./match";
+export type { MatchCompute, MatchStrategy } from "./match";
+export { matchTargets } from "./match";
 export {
   DEFAULT_STYLE_CONFIGS,
   isPaletteId,
@@ -59,6 +66,7 @@ export type {
   ParticleQualityConfig,
 } from "./motion";
 export {
+  createDustTarget,
   createImageTarget,
   createMeshTarget,
   createSphereTarget,

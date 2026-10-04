@@ -339,6 +339,33 @@ export function createWaveTarget(
   return finishShape(buffers, 0.14, 0.02);
 }
 
+/**
+ * Loose pieces scattered across a wide, shallow slab — a starting state for a
+ * reveal ("the logo gathers from dust"). Dim, slightly warm colours.
+ */
+export function createDustTarget(
+  options: MeshTargetOptions & { width?: number; height?: number } = {},
+): ParticleTarget {
+  const count = resolveParticleCount(options);
+  const random = mulberry32(resolveSeed(options));
+  const buffers = emptyBuffers(count);
+  const halfWidth = (options.width ?? 2.6) / 2;
+  const halfHeight = (options.height ?? 1.6) / 2;
+  for (let index = 0; index < count; index += 1) {
+    const offset = index * 3;
+    const tone = 0.22 + random() * 0.3;
+    buffers.positions[offset] = (random() * 2 - 1) * halfWidth;
+    buffers.positions[offset + 1] = (random() * 2 - 1) * halfHeight;
+    buffers.positions[offset + 2] = (random() * 2 - 1) * 0.12;
+    buffers.normals[offset + 2] = 1;
+    buffers.colors[offset] = tone * 1.04;
+    buffers.colors[offset + 1] = tone;
+    buffers.colors[offset + 2] = tone * 0.94;
+    buffers.seeds[index] = random();
+  }
+  return finalizeTarget({ ...buffers, normalize: false });
+}
+
 export const PROCEDURAL_TARGET_IDS = [
   "sphere",
   "torus",
