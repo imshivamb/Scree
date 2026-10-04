@@ -106,6 +106,8 @@ export class ShardsRenderer implements ParticleRenderer {
     });
     this.material.uniforms.uDpr.value = dpr;
     this.object = new THREE.Mesh(this.geometry, this.material);
+    // The shader moves every point; CPU bounds are meaningless (and start empty).
+    this.object.frustumCulled = false;
     this.object.frustumCulled = false;
   }
 

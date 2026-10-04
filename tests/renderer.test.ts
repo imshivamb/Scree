@@ -117,3 +117,24 @@ describe("renderers", () => {
     );
   });
 });
+
+describe("renderer culling", () => {
+  it("never frustum-culls the field (the shader moves the points)", async () => {
+    const { createParticleRenderer } = await import("../src/engine/renderers/create-renderer");
+    const look = {
+      expansionStrength: 0.5,
+      turbulenceStrength: 0.5,
+      synchronization: 0.7,
+      particleSize: 3,
+      glow: 0.4,
+      behaviorMix: { settle: 0, expand: 1, scatter: 0, implode: 0, turbulence: 0, orbit: 0 },
+      behaviorStrength: 1,
+      pointer: { x: 0, y: 0, radius: 0.7, strength: 0.7, mode: "off" as const },
+    };
+    for (const id of ["points", "sprites", "shards"] as const) {
+      const renderer = createParticleRenderer(id, look, { size: 1, opacity: 1 }, 1);
+      expect(renderer.object.frustumCulled).toBe(false);
+      renderer.dispose();
+    }
+  });
+});

@@ -1,5 +1,11 @@
 import * as THREE from "three";
 
+import {
+  recordClip,
+  snapshotFrame,
+  type RecordOptions,
+  type SnapshotOptions,
+} from "./export";
 import { DEFAULT_MATCH, MatchCache, type MatchStrategy } from "./match";
 import {
   DEFAULT_STYLE_CONFIGS,
@@ -26,11 +32,8 @@ import {
 import { clampProgress, shouldPlayAutoTween } from "./progress";
 import { createParticleRenderer } from "./renderers";
 import type { ParticleRenderer } from "./renderers/types";
-import {
-  assertSameTargetCount,
-  targetDepthSpan,
-  type ParticleTarget,
-} from "./target";
+import { assertSameTargetCount, type ParticleTarget } from "./target";
+import { blendFraming, DEFAULT_FIT, frameTarget } from "./camera";
 import {
   resolveMotion,
   type MotionInput,
@@ -82,6 +85,8 @@ export type ScreeOptions = {
   match?: MatchStrategy;
   /** How the field is drawn: "none" (the points), "dither", "halftone", "ascii", "pixel". */
   style?: StyleInput;
+  /** How much of the view a form fills (0.1–1). The camera fits every form. Default 0.8. */
+  fit?: number;
   onTransitionStateChange?: (isTransitioning: boolean) => void;
   onProgress?: (progress: number) => void;
   onError?: (message: string) => void;
@@ -144,6 +149,13 @@ export class Scree {
     DEFAULT_STYLE_CONFIGS,
   );
   private stylePass: StylePass | null = null;
+  private fit: number;
+  /** The two forms the camera frames; it glides between them with progress. */
+  private cameraShot: {
+    source: ParticleTarget;
+    destination: ParticleTarget;
+    distance?: number;
+  } | null = null;
   private sourceScale = new THREE.Vector3(1, 1, 1);
   private targetScale = new THREE.Vector3(1, 1, 1);
   private progress = 1;
@@ -152,6 +164,8 @@ export class Scree {
   private frameId: number | null = null;
   private paused = false;
   private disposed = false;
+  /** Set while frames are rendered for export; the live loop stops drawing. */
+  private capture: { width: number; height: number; dpr: number; fit: number } | null = null;
   private tween: Tween | null = null;
   private readonly replacedFrom = new Map<string, ParticleTarget>();
   private visibilityHandler = (): void => {
@@ -180,6 +194,7 @@ export class Scree {
     this.onError = options.onError;
     this.look = { ...DEFAULT_LOOK, ...options.look };
     this.match = options.match ?? DEFAULT_MATCH;
+    this.fit = options.fit ?? DEFAULT_FIT;
     this.camera.position.set(0, 0, 3.1);
     this.camera.lookAt(0, 0, 0);
 
@@ -237,6 +252,7 @@ export class Scree {
       this.writeField(target, target, id);
       this.sourceScale.copy(this.targetScales.get(id) ?? new THREE.Vector3(1, 1, 1));
       this.targetScale.copy(this.sourceScale);
+      this.cameraShot = { source: target, destination: target };
       this.syncSkin();
       this.applyProgress(1);
     }
@@ -282,9 +298,8 @@ export class Scree {
     this.activeTarget = id;
     this.syncSkin();
 
-    const cameraZ = options.cameraZ ?? 3.1;
     const durationSeconds = options.durationSeconds ?? 2.6;
-    this.frameCamera(destination, cameraZ);
+    this.cameraShot = { source, destination, distance: options.cameraZ };
 
     if (this.reducedMotion && this.driver === "auto") {
       this.tween = null;
@@ -374,13 +389,36 @@ export class Scree {
     return this.targets.get(id);
   }
 
-  private frameCamera(target: ParticleTarget, cameraZ: number): void {
-    if (targetDepthSpan(target) > 0.42) {
-      this.camera.position.set(0.92, 0.62, Math.max(2.55, cameraZ * 0.92));
-    } else {
-      this.camera.position.set(0, 0, cameraZ);
-    }
+  /** Fit both forms to the current aspect and place the camera between them. */
+  private updateCamera(): void {
+    if (!this.cameraShot) return;
+    const { source, destination, distance } = this.cameraShot;
+    const aspect = this.camera.aspect;
+    const from = frameTarget(source, {
+      aspect,
+      fit: this.fit,
+      scale: this.sourceScale.toArray(),
+      distance,
+    });
+    const to = frameTarget(destination, {
+      aspect,
+      fit: this.fit,
+      scale: this.targetScale.toArray(),
+      distance,
+    });
+    const { direction, distance: at } = blendFraming(from, to, this.progress);
+    this.camera.position.set(direction[0] * at, direction[1] * at, direction[2] * at);
     this.camera.lookAt(0, 0, 0);
+  }
+
+  /** How much of the view a form fills (0.1–1). */
+  setFit(fit: number): void {
+    this.fit = Math.min(1, Math.max(0.1, fit));
+    this.updateCamera();
+  }
+
+  getFit(): number {
+    return this.fit;
   }
 
   getActiveTarget(): string | null {
@@ -513,6 +551,7 @@ export class Scree {
     this.viewport = { width: safeWidth, height: safeHeight };
     this.camera.aspect = safeWidth / safeHeight;
     this.camera.updateProjectionMatrix();
+    this.updateCamera();
     this.webgl.setSize(safeWidth, safeHeight, false);
     this.skin.setViewport(safeWidth, safeHeight);
     this.skin.setDpr(this.webgl.getPixelRatio());
@@ -523,6 +562,71 @@ export class Scree {
     if (!this.stylePass) return;
     const size = this.webgl.getDrawingBufferSize(new THREE.Vector2());
     this.stylePass.setSize(size.x, size.y, this.webgl.getPixelRatio());
+  }
+
+  /**
+   * Low-level export hooks (used by `record` / `snapshot`). While capturing,
+   * the drawing buffer is resized to the export size and the live loop pauses.
+   */
+  beginCapture(width: number, height: number, fit?: number): void {
+    if (this.capture) throw new Error("A capture is already running");
+    this.capture = { ...this.viewport, dpr: this.webgl.getPixelRatio(), fit: this.fit };
+    this.tween = null;
+    if (fit !== undefined) this.fit = Math.min(1, Math.max(0.1, fit));
+    this.webgl.setPixelRatio(1);
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+    this.updateCamera();
+    this.webgl.setSize(width, height, false);
+    this.skin.setViewport(width, height);
+    this.skin.setDpr(1);
+    this.syncStyleSize();
+  }
+
+  /** Draw one exact frame. Returns the canvas holding it (read it right away). */
+  renderCaptureFrame(progress: number, timeSeconds: number): HTMLCanvasElement {
+    if (!this.capture) throw new Error("Call beginCapture first");
+    this.applyProgress(progress);
+    this.skin.setTime(timeSeconds);
+    this.draw();
+    return this.webgl.domElement;
+  }
+
+  endCapture(): void {
+    const saved = this.capture;
+    if (!saved) return;
+    this.capture = null;
+    this.fit = saved.fit;
+    this.webgl.setPixelRatio(saved.dpr);
+    this.resize(saved.width, saved.height);
+  }
+
+  /** Point the field at `from → to` without starting a tween. */
+  prepareTransition(from: string, to: string, match?: MatchStrategy): void {
+    if (!this.targets.has(from) || !this.targets.has(to)) {
+      throw new Error(`Unknown morph target "${this.targets.has(from) ? to : from}"`);
+    }
+    const driver = this.driver;
+    this.driver = "manual";
+    this.transition({ from, to, match, replay: true });
+    this.driver = driver;
+  }
+
+  /**
+   * Export `from → to` as an MP4 (or a ZIP of PNG frames), rendered offline
+   * frame by frame. Resolves with the file; the page keeps working meanwhile.
+   */
+  record(options: RecordOptions): Promise<Blob> {
+    return recordClip(this, options);
+  }
+
+  /** The current frame as a PNG, at any size. */
+  snapshot(options: SnapshotOptions = {}): Promise<Blob> {
+    return snapshotFrame(this, this.progress, options);
+  }
+
+  hasTarget(id: string): boolean {
+    return this.targets.has(id);
   }
 
   setPaused(paused: boolean): void {
@@ -586,23 +690,29 @@ export class Scree {
     const render = (time: number) => {
       this.frameId = null;
       if (this.disposed || this.paused) return;
-      this.stepTween(time);
-      this.skin.setTime(time / 1000);
-      if (this.styleId === "none" || !this.stylePass) {
-        this.webgl.render(this.scene, this.camera);
-      } else {
-        this.stylePass.render(
-          this.webgl,
-          this.scene,
-          this.camera,
-          this.styleId,
-          this.styleConfigs[this.styleId],
-        );
+      if (!this.capture) {
+        this.stepTween(time);
+        this.skin.setTime(time / 1000);
+        this.draw();
       }
       this.frameId = requestAnimationFrame(render);
     };
 
     this.frameId = requestAnimationFrame(render);
+  }
+
+  private draw(): void {
+    if (this.styleId === "none" || !this.stylePass) {
+      this.webgl.render(this.scene, this.camera);
+      return;
+    }
+    this.stylePass.render(
+      this.webgl,
+      this.scene,
+      this.camera,
+      this.styleId,
+      this.styleConfigs[this.styleId],
+    );
   }
 
   private stepTween(time: number): void {
@@ -625,6 +735,7 @@ export class Scree {
   private applyProgress(progress: number): void {
     this.progress = clampProgress(progress);
     this.applyMotionAtProgress();
+    this.updateCamera();
     this.skin.setProgress(this.progress);
     this.onProgress?.(this.progress);
   }

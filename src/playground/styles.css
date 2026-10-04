@@ -261,6 +261,17 @@ h1 {
   flex-wrap: wrap;
 }
 
+.export-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.export-row select {
+  padding: 8px 10px;
+}
+
 .strength {
   display: flex;
   align-items: center;
@@ -507,17 +518,46 @@ html.pointer-drive {
     overflow: auto;
   }
 
+  /* Phones: the stage stays fixed behind; panels stack and scroll over it. */
+  #app {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px 16px 24px;
+  }
+
   .top,
   .left-stack,
   .renderer-panel,
   .drop {
-    position: absolute;
+    position: relative;
+    inset: auto;
+    width: auto;
+    max-width: none;
+    max-height: none;
+    flex-shrink: 0;
   }
 
   .top {
-    top: 18px;
-    left: 18px;
-    right: 18px;
+    order: 0;
+  }
+
+  .drop {
+    order: 1;
+    margin-top: 54vh;
+  }
+
+  .renderer-panel {
+    order: 2;
+  }
+
+  .left-stack {
+    order: 3;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--glass);
+    backdrop-filter: blur(18px);
   }
 
   h1 {
@@ -526,29 +566,6 @@ html.pointer-drive {
 
   .lede {
     display: none;
-  }
-
-  .renderer-panel {
-    left: 18px;
-    right: 18px;
-    top: 168px;
-    width: auto;
-  }
-
-  .left-stack {
-    left: 18px;
-    right: 18px;
-    top: 360px;
-    bottom: auto;
-    max-width: none;
-  }
-
-  .drop {
-    left: 18px;
-    right: 18px;
-    width: auto;
-    top: auto;
-    bottom: 18px;
   }
 }
 

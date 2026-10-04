@@ -1,5 +1,13 @@
 export { createScree, Scree } from "./scene";
 export type { MorphToOptions, ScreeOptions, TransitionOptions } from "./scene";
+export { EXPORT_ASPECTS, EXPORT_QUALITIES, exportSize } from "./export";
+export type {
+  ExportAspect,
+  ExportFormat,
+  ExportQuality,
+  RecordOptions,
+  SnapshotOptions,
+} from "./export";
 export { DEFAULT_MATCH, isMatchStrategy, MATCH_STRATEGIES } from "./match";
 export type { MatchStrategy } from "./match";
 export {

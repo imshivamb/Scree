@@ -110,6 +110,28 @@ engine.setStyle("none"); // back to the points as they are
 - `palette`: `source` (the form's own colours), `mono` (one `ink`), `duotone` (`shade` → `ink`).
 - Each style remembers its own settings when you switch away and back.
 
+### Export
+
+Clips render offline, frame by frame, so every frame is exact no matter how fast the machine is.
+
+```ts
+const mp4 = await engine.record({
+  from: "before",
+  to: "after",
+  aspect: "9:16",          // "16:9" | "1:1" | "9:16", or width + height
+  quality: "1080p",        // "720p" | "1080p" | "4k"
+  durationSeconds: 1.8,
+  holdStartSeconds: 0.6,
+  holdEndSeconds: 1.2,
+  onProgress: (f) => console.log(Math.round(f * 100) + "%"),
+});
+
+const frames = await engine.record({ from: "before", to: "after", format: "png-sequence" }); // ZIP, transparent
+const still = await engine.snapshot({ aspect: "1:1" });                                       // PNG, transparent
+```
+
+MP4 uses the browser's own H.264 encoder (WebCodecs) and a small built-in MP4 writer, with no extra dependency. Where WebCodecs is missing, export a PNG sequence. The camera fits every form to the export's aspect (`fit`, default 0.82 for exports).
+
 Presets: `organic`, `flow`, `dissolve`, `explode`, `implode`, `vortex`, `reveal`, `disperse`, `reassemble`. Weights can also be envelopes: `{ expand: { from: 0, to: 0.8, easing: "organic" } }`.
 
 ## Contributor commands

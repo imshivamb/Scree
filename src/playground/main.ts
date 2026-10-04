@@ -9,6 +9,9 @@ import {
   isPaletteId,
   isRendererId,
   isStyleId,
+  type ExportAspect,
+  type ExportFormat,
+  type ExportQuality,
   Scree,
   type BehaviorMix,
   type DriverId,
@@ -73,6 +76,11 @@ const scrollSpace = document.querySelector<HTMLElement>("#scroll-space");
 const sizeInput = document.querySelector<HTMLInputElement>("#renderer-size");
 const opacityInput = document.querySelector<HTMLInputElement>("#renderer-opacity");
 const styleCellInput = document.querySelector<HTMLInputElement>("#style-cell");
+const exportAspectInput = document.querySelector<HTMLSelectElement>("#export-aspect");
+const exportQualityInput = document.querySelector<HTMLSelectElement>("#export-quality");
+const exportFormatInput = document.querySelector<HTMLSelectElement>("#export-format");
+const exportClipButton = document.querySelector<HTMLButtonElement>("#export-clip");
+const exportStillButton = document.querySelector<HTMLButtonElement>("#export-still");
 const kindButtons = [...document.querySelectorAll<HTMLButtonElement>("[data-kind]")];
 const presetButtons = [
   ...document.querySelectorAll<HTMLButtonElement>("[data-preset]"),
@@ -127,7 +135,12 @@ if (
   !scrollSpace ||
   !sizeInput ||
   !opacityInput ||
-  !styleCellInput
+  !styleCellInput ||
+  !exportAspectInput ||
+  !exportQualityInput ||
+  !exportFormatInput ||
+  !exportClipButton ||
+  !exportStillButton
 ) {
   throw new Error("Playground markup is missing");
 }
@@ -149,6 +162,11 @@ const nameMesh = meshName;
 const sizeControl = sizeInput;
 const opacityControl = opacityInput;
 const styleCellControl = styleCellInput;
+const exportAspect = exportAspectInput;
+const exportQuality = exportQualityInput;
+const exportFormat = exportFormatInput;
+const exportClip = exportClipButton;
+const exportStill = exportStillButton;
 const strengthControl = strengthInput;
 const expandControl = expandInput;
 const turbulenceControl = turbulenceInput;
@@ -179,6 +197,8 @@ const engine = new Scree({
   canvas,
   quality,
   reducedMotion,
+  // Leave room for the side panels; exports fill more of the frame.
+  fit: window.innerWidth > 720 ? 0.6 : 0.72,
   onTransitionStateChange: (isTransitioning) => {
     if (!customReady) {
       statusEl.textContent = isTransitioning
@@ -530,6 +550,66 @@ styleCellControl.addEventListener("input", () => {
   const { id } = engine.getStyle();
   if (id !== "none") engine.setStyle({ id, cell: Number(styleCellControl.value) });
 });
+
+function download(blob: Blob, name: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+async function runExport(work: () => Promise<void>): Promise<void> {
+  exportClip.disabled = true;
+  exportStill.disabled = true;
+  try {
+    await work();
+  } catch (error) {
+    statusEl.textContent = error instanceof Error ? error.message : "Export failed.";
+  } finally {
+    exportClip.disabled = false;
+    exportStill.disabled = false;
+  }
+}
+
+exportClip.addEventListener("click", () => {
+  const to = engine.getActiveTarget();
+  if (!to) return;
+  const from = previousTarget ?? to;
+  const format = exportFormat.value as ExportFormat;
+  void runExport(async () => {
+    const started = performance.now();
+    const blob = await engine.record({
+      from,
+      to,
+      format,
+      aspect: exportAspect.value as ExportAspect,
+      quality: exportQuality.value as ExportQuality,
+      onProgress: (fraction) => {
+        statusEl.textContent = `Exporting ${from} → ${to}: ${Math.round(fraction * 100)}%`;
+      },
+    });
+    const seconds = ((performance.now() - started) / 1000).toFixed(1);
+    download(blob, `scree-${from}-to-${to}.${format === "mp4" ? "mp4" : "zip"}`);
+    statusEl.textContent = `Exported in ${seconds}s (${(blob.size / 1e6).toFixed(1)} MB).`;
+  });
+});
+
+exportStill.addEventListener("click", () => {
+  void runExport(async () => {
+    const blob = await engine.snapshot({
+      aspect: exportAspect.value as ExportAspect,
+      quality: exportQuality.value as ExportQuality,
+    });
+    download(blob, `scree-${engine.getActiveTarget() ?? "still"}.png`);
+    statusEl.textContent = "Saved a transparent PNG of this frame.";
+  });
+});
+
+if (import.meta.env.DEV) {
+  (window as unknown as { __scree?: Scree }).__scree = engine;
+}
 
 const MATCH_STATUS: Record<MatchStrategy, string> = {
   transport: "Smart: every piece finds its place by position and colour. Try App v1 → App v2.",
