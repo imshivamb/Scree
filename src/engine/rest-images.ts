@@ -35,6 +35,7 @@ function plane(): THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial> {
       fragmentShader: FRAGMENT,
       uniforms: { uImage: { value: null }, uAlpha: { value: 0 }, uFlatOutput: { value: 0 } },
       transparent: true,
+      depthTest: false,
       depthWrite: false,
     }),
   );

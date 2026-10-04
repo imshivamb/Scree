@@ -58,7 +58,8 @@ void main() {
   float radius = length(point);
   if (radius > 1.0) discard;
   if (uFlatOutput > 0.5) {
-    gl_FragColor = vec4(vColor, 1.0);
+    // Coverage follows opacity, so faded points vanish from styled frames too.
+    gl_FragColor = vec4(vColor * uOpacity, uOpacity);
     return;
   }
 

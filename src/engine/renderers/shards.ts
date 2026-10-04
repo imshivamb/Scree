@@ -63,7 +63,8 @@ varying float vSeed;
 
 void main() {
   if (uFlatOutput > 0.5) {
-    gl_FragColor = vec4(vColor, 1.0);
+    // Coverage follows opacity, so faded points vanish from styled frames too.
+    gl_FragColor = vec4(vColor * uOpacity, uOpacity);
     return;
   }
   float facet = 0.67 + vSeed * 0.28 + vFlight * 0.12;

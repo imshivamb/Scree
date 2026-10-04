@@ -129,6 +129,8 @@ type Tween = {
 export class Scree {
   private readonly webgl: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
+  /** Drawn after any style pass: the real pictures at the ends of point effects stay crisp. */
+  private readonly overlay = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(42, 1, 0.08, 24);
   private readonly targets = new Map<string, ParticleTarget>();
   private readonly targetScales = new Map<string, THREE.Vector3>();
@@ -233,7 +235,7 @@ export class Scree {
       this.webgl.getPixelRatio(),
     );
     this.scene.add(this.skin.object);
-    this.scene.add(this.restImages.object);
+    this.overlay.add(this.restImages.object);
     if (options.style) this.setStyle(options.style);
     if (options.effect) this.setEffect(options.effect);
     options.canvas.addEventListener("webglcontextlost", this.handleContextLost);
@@ -390,7 +392,6 @@ export class Scree {
     this.styleConfigs[id] = next;
     this.styleId = id;
     this.skin.setFlatOutput(id !== "none");
-    this.restImages.setFlatOutput(id !== "none");
     if (id !== "none" && !this.stylePass) {
       this.stylePass = new StylePass();
       this.syncStyleSize();
@@ -818,15 +819,20 @@ export class Scree {
   private draw(): void {
     if (this.styleId === "none" || !this.stylePass) {
       this.webgl.render(this.scene, this.camera);
-      return;
+    } else {
+      this.stylePass.render(
+        this.webgl,
+        this.scene,
+        this.camera,
+        this.styleId,
+        this.styleConfigs[this.styleId],
+      );
     }
-    this.stylePass.render(
-      this.webgl,
-      this.scene,
-      this.camera,
-      this.styleId,
-      this.styleConfigs[this.styleId],
-    );
+    if (this.restImages.object.visible) {
+      this.webgl.autoClear = false;
+      this.webgl.render(this.overlay, this.camera);
+      this.webgl.autoClear = true;
+    }
   }
 
   private stepTween(time: number): void {

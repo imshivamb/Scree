@@ -11,7 +11,8 @@
     "build:playground": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "npm pack --dry-run",
+    "check:effects": "node scripts/check-effects.mjs"
   },
   "main": "./dist/scree.js",
   "module": "./dist/scree.js",
