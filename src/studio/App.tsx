@@ -237,20 +237,16 @@ export function App() {
         <a className="brand" href="/">
           Scree
         </a>
+        <h1 className="masthead-title">
+          Studio <em>— every piece finds its place</em>
+        </h1>
         <nav>
+          <a href="/">Site</a>
           <a href="https://github.com/imshivamb/Scree" target="_blank" rel="noreferrer">
             GitHub
           </a>
         </nav>
       </header>
-
-      <section className="hero">
-        <h1>Every piece finds its place.</h1>
-        <p>
-          Drop in two screenshots, or a logo. Scree breaks the first into pieces, settles every piece into its
-          place in the next, and exports the clip.
-        </p>
-      </section>
 
       <main className="workspace">
         <aside className="rail rail-left" aria-label="Template and inputs">
@@ -324,8 +320,8 @@ export function App() {
                 ? `Exporting ${Math.round(exportProgress * 100)}%`
                 : busy
             }
+            footer={controller ? <Transport controller={controller} /> : null}
           />
-          {controller ? <Transport controller={controller} /> : null}
           {error ? (
             <p className="error" role="alert">
               {error}

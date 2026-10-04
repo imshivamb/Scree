@@ -2,148 +2,246 @@
 
 **Every piece finds its place.**
 
-Drop in two things (a screenshot, a logo, a photo, a word, a 3D model) and Scree turns one into the other as a single transformation you can follow. It is not a cut and not a crossfade. The first form breaks into pieces, and each piece travels to its matching place in the next form: the blue button flows to where the blue button went.
+Scree is an open-source WebGL engine that breaks any picture into pieces and settles every piece where it belongs in the next one. A screenshot becomes its redesign, a cliff collapses into scree, a word shatters into a logo — as one continuous movement you can follow, not a cut or a crossfade.
 
-Scree is named after the slope of broken rock under a cliff, where every falling stone settles where it fits.
+- **Real pixels.** Every transition starts on your exact first frame and lands on your exact last frame.
+- **Pieces that know where to go.** Pieces are paired by place and colour, so the button travels to where the button went.
+- **Twenty transitions.** Landslide, Shatter, Page peel, Liquid, Ink bleed, Light leak, Pixel sort, Line-art… and you can register your own.
+- **Exact export.** Render a frame-perfect MP4 or a transparent PNG sequence straight from the browser.
+- **Small.** One runtime dependency (three.js), about 39 KB gzipped.
 
-**Live:** [scree-tau.vercel.app](https://scree-tau.vercel.app)
+**Live:** [scree-tau.vercel.app](https://scree-tau.vercel.app) — the site is itself one long Scree transition. The no-code **Studio** is at [/studio](https://scree-tau.vercel.app/studio/).
 
-### What you can make
-
-- **Launch and changelog moments:** old UI → new UI, v1 → v2.
-- **Logo reveals:** a mark that forms from loose pieces.
-- **Hero and scroll sections:** a page that turns this into that as you scroll.
-- **Before → after** for anything you can draw, photograph, or model.
-
-Today Scree is a browser library (`scree-core`) and a playground. Video export, more styles, and a no-code studio are next.
-
-## Playground
-
-```bash
-npm install
-npm test
-npm run dev
-```
-
-Open the local Vite URL for the site; the Studio is at `/studio/`. In the Studio, pick an **Effect** (Pieces, Shatter, Page peel, Liquid, Line-art…), drop in your own images, scrub, and export. The older developer playground lives at `/lab/`. The **Target** panel is Image / Text / 3D / Shape. **Points / Sprites / Shards** change the draw. **Smart / Spatial / Random** decide how pieces pair up. **Organic / Flow / Explode / Dissolve / Vortex** mix motions. **Auto / Manual / Scroll / Pointer** write progress. **Showcase** scrolls Image → Text → 3D → Shape on the same field. **Copy code** copies a snippet you can paste next to a Scree canvas. Files stay in the browser.
+---
 
 ## Install
 
+```bash
+npm install scree-core
+```
+
+`three` comes with it as a dependency.
+
+## Quick start
+
 ```ts
-// npm install scree-core
-import {
-  createScree,
-  createImageTarget,
-  createTextTarget,
-  createMeshTarget,
-  createSphereTarget,
-} from "scree-core";
+import { createScree, createImageTarget } from "scree-core";
 
-const canvas = document.querySelector("canvas");
-if (!canvas) throw new Error("Scree canvas not found.");
+const canvas = document.querySelector("canvas")!;
+const scree = createScree({ canvas, effect: "landslide" });
 
-const engine = createScree({ canvas });
-engine.addTarget("logo", await createImageTarget("/logo.png", {
-  particleCount: 128 * 128,
-}));
-engine.addTarget("hello", createTextTarget("HELLO", {
-  particleCount: 128 * 128,
-}));
-engine.addTarget("model", await createMeshTarget("/heart.glb", {
-  particleCount: 128 * 128,
-}));
-engine.addTarget("sphere", createSphereTarget({
-  particleCount: 128 * 128,
-}));
+scree.addTarget("before", await createImageTarget("/before.png"));
+scree.addTarget("after", await createImageTarget("/after.png"));
 
-engine.transition({
-  from: "logo",
-  to: "hello",
-  durationSeconds: 1.6,
-  motion: "organic",
+scree.transition({ from: "before", to: "after", durationSeconds: 2.4 });
+
+// Keep the canvas sized to its box.
+const resize = () => scree.resize(canvas.clientWidth, canvas.clientHeight);
+resize();
+window.addEventListener("resize", resize);
+
+// When the canvas is removed:
+// scree.dispose();
+```
+
+Every target in one engine must share a particle count. If you set `particleCount` yourself, pass the same value to every `create*Target` call.
+
+## Scroll it instead of playing it
+
+Motion is a pure function of progress, so any driver can scrub it — scroll, a slider, your own timeline.
+
+```ts
+scree.setDriver("manual");
+scree.prepareTransition("before", "after");
+
+window.addEventListener("scroll", () => {
+  const section = document.querySelector("#story")!;
+  const { top, height } = section.getBoundingClientRect();
+  scree.setProgress(Math.min(1, Math.max(0, -top / (height - innerHeight))));
 });
-engine.setRenderer("sprites");
-
-// Call this when the canvas is removed from the page.
-// engine.dispose();
 ```
 
-The same API works with `new Scree({ canvas })`; `createScree` is the recommended entry point. Defaults choose quality and reduced-motion behavior from the browser. `setBehavior("expand")` is still exclusive expand. A mix adds displacements; it does not swap the field. `transition` picks the pair and the mix. Drivers only write `t` and pointer. Changing one of those does not require changing the others.
-
-Every generator returns the same `ParticleTarget`: `{ positions, colors, seeds, normals, groupIds?, count }`. Targets must share a particle count. `setRenderer` only changes how the field is drawn.
-
-### Match
-
-Match decides which point in one form travels to which point in the next.
+## Effects
 
 ```ts
-createScree({ canvas });                     // match: "transport" (default)
-engine.setMatch("spatial");                  // from the next morph on
-engine.transition({ to: "after", match: "random" });
+import { listEffects } from "scree-core";
+
+scree.setEffect("peel");
+console.log(listEffects().map((effect) => effect.id));
 ```
 
-- `transport`: pairs by place **and colour**, so regions travel to their counterparts (a moved button, a recoloured chart). The pairing is approximate optimal transport, computed once per pair and cached; 16k points take about a quarter of a second.
-- `spatial`: pairs by relative place only. Shapes line up; colour is ignored.
-- `random`: no pairing. The classic dissolve.
+| Family | Effects |
+|---|---|
+| **Pieces** — the image cut into real fragments that travel | `landslide`, `pieces`, `shatter`, `slices`, `blinds`, `mosaic-flip`, `origami`, `card-stack`, `type-shatter` |
+| **Surface** — whole-image shader transitions | `peel`, `liquid`, `ink`, `light-leak`, `pixel-sort`, `depth`, `line-art`, `glitch` |
+| **Particles** — a fine point field between two real pictures | `dust`, `magnetic`, `gooey` |
 
-Every target is stored in a canonical order along a Hilbert curve, so `spatial` is free. A GLB with several meshes gets one group per mesh (`groupIds`), and groups stay together. Use the `flow` motion when you want viewers to see what moved; `organic` opens a cloud that hides it.
+Switch any time with `scree.setEffect(id)`; targets, timing and export keep working. Every effect is guaranteed to rest exactly on the source at `t = 0` and on the destination at `t = 1`.
 
-- `points` — glow dots. Default and cheapest.
-- `sprites` — instanced soft quads, a little larger than points.
-- `shards` — instanced triangles that rotate in flight.
+### Make your own effect
 
-`size` is a multiplier around the renderer’s own default, not a pixel value.
-
-### Styles
-
-A style redraws the same moving pieces per cell, so every motion and every match works in every style.
+An effect is one definition. Piece effects describe how to cut and how pieces move:
 
 ```ts
-createScree({ canvas, style: "halftone" });
-engine.setStyle({ id: "dither", cell: 3, palette: "source" });
-engine.setStyle({ id: "ascii", palette: "mono", ink: "#eef3ff" });
-engine.setStyle("none"); // back to the points as they are
+import { defineEffect, registerEffect } from "scree-core";
+
+registerEffect(
+  defineEffect({
+    id: "rockfall",
+    label: "Rockfall",
+    description: "Big stones drop, heap, and climb into place.",
+    family: "pieces",
+    durationSeconds: 3,
+    pieces: {
+      cut: { kind: "triangles", density: 240, jitter: 0.25 },
+      motion: { stagger: 0.4, staggerBy: "random", lift: 0.3, arc: 0, tilt: 0, gravity: 1.2, gloss: 0.5 },
+    },
+  }),
+);
+
+scree.setEffect("rockfall");
 ```
 
-- Styles: `none`, `dither`, `halftone`, `ascii`, `pixel`.
-- `cell`: cell size in CSS pixels.
-- `palette`: `source` (the form's own colours), `mono` (one `ink`), `duotone` (`shade` → `ink`).
-- Each style remembers its own settings when you switch away and back.
-
-### Export
-
-Clips render offline, frame by frame, so every frame is exact no matter how fast the machine is.
+Surface effects bring a small GLSL function (`srcAt(p)` and `dstAt(p)` sample the two pictures, `t` runs 0 → 1):
 
 ```ts
-const mp4 = await engine.record({
+import { defineEffect, registerEffect, registerSurfaceShader } from "scree-core";
+
+registerSurfaceShader({
+  id: "iris",
+  fragment: `
+    vec4 transition(vec2 p, float t) {
+      float r = distance(unionUv(p), vec2(0.5));
+      return blend(srcAt(p), dstAt(p), smoothstep(t * 0.8, t * 0.8 + 0.05, 0.8 - r));
+    }`,
+});
+
+registerEffect(
+  defineEffect({
+    id: "iris",
+    label: "Iris",
+    description: "A circle opens onto the next picture.",
+    family: "surface",
+    durationSeconds: 1.4,
+    surface: { shader: "iris" },
+  }),
+);
+```
+
+## Inputs
+
+```ts
+import {
+  createImageTarget, // PNG, JPEG, WebP, SVG, a File, or a data URL
+  createTextTarget, // a word or a short sentence
+  createMeshTarget, // a GLB / GLTF surface
+  createProceduralTarget, // "sphere", "torus", "cube", "helix", "spiral", "cylinder", "pyramid", "wave"
+  createDustTarget, // loose pieces — a starting state for reveals
+} from "scree-core";
+```
+
+## Matching
+
+How pieces pair up between two pictures:
+
+```ts
+createScree({ canvas, match: "transport" }); // default: by place and colour
+scree.setMatch("spatial"); // by relative place only
+scree.setMatch("random"); // no pairing — a classic dissolve
+```
+
+For large point fields, `await scree.preloadMatch("before", "after", { compute })` lets you run the pairing in your own Web Worker.
+
+## Styles
+
+A style redraws the moving pieces per cell, on top of any effect.
+
+```ts
+scree.setStyle({ id: "halftone", cell: 8, palette: "source" });
+scree.setStyle({ id: "ascii", palette: "mono", ink: "#eef3ff" });
+scree.setStyle("none");
+```
+
+Styles: `none`, `dither`, `halftone`, `ascii`, `pixel`, `goo`. Palettes: `source`, `mono`, `duotone`.
+
+## Export
+
+Clips render offline, frame by frame, so every frame is exact on any machine.
+
+```ts
+const mp4 = await scree.record({
   from: "before",
   to: "after",
-  aspect: "9:16",          // "16:9" | "1:1" | "9:16", or width + height
-  quality: "1080p",        // "720p" | "1080p" | "4k"
-  durationSeconds: 1.8,
+  aspect: "9:16", // "16:9" | "1:1" | "9:16" — or width + height
+  quality: "1080p", // "720p" | "1080p" | "4k"
+  durationSeconds: 2.4,
   holdStartSeconds: 0.6,
   holdEndSeconds: 1.2,
-  onProgress: (f) => console.log(Math.round(f * 100) + "%"),
+  onProgress: (fraction) => console.log(Math.round(fraction * 100) + "%"),
 });
 
-const frames = await engine.record({ from: "before", to: "after", format: "png-sequence" }); // ZIP, transparent
-const still = await engine.snapshot({ aspect: "1:1" });                                       // PNG, transparent
+const frames = await scree.record({ from: "before", to: "after", format: "png-sequence" }); // ZIP, transparent
+const still = await scree.snapshot({ aspect: "1:1" }); // PNG
 ```
 
-MP4 uses the browser's own H.264 encoder (WebCodecs) and a small built-in MP4 writer, with no extra dependency. Where WebCodecs is missing, export a PNG sequence. The camera fits every form to the export's aspect (`fit`, default 0.82 for exports).
+MP4 uses the browser's own H.264 encoder (WebCodecs) and a small built-in MP4 writer. Where WebCodecs is missing, export a PNG sequence.
 
-Presets: `organic`, `flow`, `dissolve`, `explode`, `implode`, `vortex`, `reveal`, `disperse`, `reassemble`. Weights can also be envelopes: `{ expand: { from: 0, to: 0.8, easing: "organic" } }`.
+## Camera and framing
 
-## Contributor commands
+The camera fits every picture to the canvas and glides between them.
+
+```ts
+createScree({ canvas, fit: 0.7 }); // how much of the view a picture fills (0.1–1)
+scree.setTilt(0.1, -0.05); // lean the camera: pieces in flight separate in depth (pointer parallax)
+```
+
+## API at a glance
+
+| Call | What it does |
+|---|---|
+| `createScree(options)` | `canvas`, `effect`, `match`, `style`, `fit`, `quality`, `reducedMotion`, `onProgress`, `onTransitionStateChange`, `onError` |
+| `addTarget(id, target)` / `removeTarget(id)` | Register or forget a picture |
+| `transition({ from, to, durationSeconds })` | Play a transition |
+| `prepareTransition(from, to)` + `setProgress(t)` | Scrub it yourself (after `setDriver("manual")`) |
+| `setEffect(id)` / `getEffect()` | Choose the transition |
+| `setMatch()` / `setStyle()` / `setFit()` / `setTilt()` | Pairing, finish, framing, parallax |
+| `record(options)` / `snapshot(options)` | MP4, PNG sequence, PNG |
+| `resize(width, height)` / `dispose()` | Lifecycle |
+| `listEffects()` / `defineEffect()` / `registerEffect()` / `registerSurfaceShader()` | The effect library |
+
+Reduced motion is respected by default: transitions jump to the final picture.
+
+---
+
+## This repository
+
+| Path | What it is |
+|---|---|
+| `src/engine` | The `scree-core` library |
+| `index.html`, `src/site` | The website at `/` — one scroll-driven Scree transition with artwork generated in code |
+| `studio/index.html`, `src/studio` | The Studio at `/studio/` — templates, your own images, every effect, export |
+| `lab/index.html` | A developer lab for renderers and drivers (unlinked) |
+| `scripts/check-effects.mjs` | Verifies every effect starts and ends on the exact pictures |
+
+### Develop
 
 ```bash
-npm test
-npm run build
-npm run pack:check
+npm install
+npm run dev            # site at http://localhost:5173, Studio at /studio/
+npm test               # unit tests
+npm run build          # library, types, and the site
+npm run check:effects  # with the dev server running: exact first/last frames for every effect
 ```
 
-The package build emits an ESM bundle and declarations under `dist`. Three.js is installed as Scree's normal runtime dependency. React is not required and React bindings are not included yet.
+### Changelog
 
-## What this is not
+- **0.2.0** — Twenty effects in three families (pieces, surface, particles) on a pluggable effect registry. Transitions move real pixels and rest exactly on the first and last picture. New: Landslide, place-and-colour matching, styles (dither, halftone, ASCII, pixel, goo), frame-exact MP4 / PNG export, a fit-to-content camera with `setTilt`, the Studio, and the new website.
+- **0.1.0** — The first particle morph engine.
 
-Audio, webcam, WebGPU, physics, or a React package. Video export and a no-code studio are next.
+### What Scree is not
+
+A timeline editor, a 3D suite, or a physics engine. Scree does one thing: it turns one picture into the next, with every piece accounted for.
+
+## License
+
+MIT

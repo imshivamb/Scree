@@ -1,8 +1,29 @@
 {
   "name": "scree-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
-  "description": "Every piece finds its place. Turn a screenshot, logo, photo, word, or 3D model into the next one, with every piece traveling to its match.",
+  "description": "Every piece finds its place. A WebGL engine that breaks any picture into pieces and settles every piece where it belongs in the next — twenty transitions, real pixels, exact MP4 export.",
+  "keywords": [
+    "webgl",
+    "three",
+    "transition",
+    "image-transition",
+    "morph",
+    "shatter",
+    "particles",
+    "animation",
+    "scroll",
+    "creative-coding"
+  ],
+  "license": "MIT",
+  "homepage": "https://scree-tau.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imshivamb/Scree.git"
+  },
+  "bugs": {
+    "url": "https://github.com/imshivamb/Scree/issues"
+  },
   "scripts": {
     "dev": "vite",
     "build": "npm run build:lib && npm run build:types && npm run build:playground",
@@ -12,7 +33,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "pack:check": "npm pack --dry-run",
-    "check:effects": "node scripts/check-effects.mjs"
+    "check:effects": "node scripts/check-effects.mjs",
+    "prepublishOnly": "npm test && npm run build:lib && npm run build:types"
   },
   "main": "./dist/scree.js",
   "module": "./dist/scree.js",
@@ -42,5 +64,6 @@
     "typescript": "^5.8.2",
     "vite": "^6.2.2",
     "vitest": "^3.0.9"
-  }
+  },
+  "sideEffects": true
 }
