@@ -6,7 +6,9 @@ import {
   createTorusKnotTarget,
   isDriverId,
   isMatchStrategy,
+  isPaletteId,
   isRendererId,
+  isStyleId,
   Scree,
   type BehaviorMix,
   type DriverId,
@@ -70,6 +72,7 @@ const showcaseButton = document.querySelector<HTMLButtonElement>("#showcase");
 const scrollSpace = document.querySelector<HTMLElement>("#scroll-space");
 const sizeInput = document.querySelector<HTMLInputElement>("#renderer-size");
 const opacityInput = document.querySelector<HTMLInputElement>("#renderer-opacity");
+const styleCellInput = document.querySelector<HTMLInputElement>("#style-cell");
 const kindButtons = [...document.querySelectorAll<HTMLButtonElement>("[data-kind]")];
 const presetButtons = [
   ...document.querySelectorAll<HTMLButtonElement>("[data-preset]"),
@@ -85,6 +88,12 @@ const transitionButtons = [
 ];
 const driverButtons = [
   ...document.querySelectorAll<HTMLButtonElement>("[data-driver]"),
+];
+const styleButtons = [
+  ...document.querySelectorAll<HTMLButtonElement>("[data-style]"),
+];
+const paletteButtons = [
+  ...document.querySelectorAll<HTMLButtonElement>("[data-palette]"),
 ];
 const matchButtons = [
   ...document.querySelectorAll<HTMLButtonElement>("[data-match]"),
@@ -117,7 +126,8 @@ if (
   !showcaseButton ||
   !scrollSpace ||
   !sizeInput ||
-  !opacityInput
+  !opacityInput ||
+  !styleCellInput
 ) {
   throw new Error("Playground markup is missing");
 }
@@ -138,6 +148,7 @@ const nameB = targetName;
 const nameMesh = meshName;
 const sizeControl = sizeInput;
 const opacityControl = opacityInput;
+const styleCellControl = styleCellInput;
 const strengthControl = strengthInput;
 const expandControl = expandInput;
 const turbulenceControl = turbulenceInput;
@@ -288,6 +299,7 @@ async function start(): Promise<void> {
   syncMixSliders();
   showKind("image");
   syncRendererSliders();
+  syncStyleControls();
   statusEl.textContent = reducedMotion
     ? "Reduced motion: forms change without the cloud."
     : "Organic mix is on. Click Nova, then try Explode or Showcase.";
@@ -481,6 +493,44 @@ function setShowcase(on: boolean): void {
     "Scroll the page. Image → Text → 3D → Shape. Same particles the whole way.";
 }
 
+function syncStyleControls(): void {
+  const { id, config } = engine.getStyle();
+  setPressed(styleButtons, "style", id);
+  setPressed(paletteButtons, "palette", config.palette);
+  styleCellControl.value = String(config.cell);
+  styleCellControl.disabled = id === "none";
+}
+
+for (const button of styleButtons) {
+  button.addEventListener("click", () => {
+    const id = button.dataset.style;
+    if (!id || !isStyleId(id)) return;
+    engine.setStyle(id);
+    syncStyleControls();
+    statusEl.textContent =
+      id === "none" ? "The points as they are." : `${button.textContent ?? id}: same pieces, drawn per cell.`;
+  });
+}
+
+for (const button of paletteButtons) {
+  button.addEventListener("click", () => {
+    const palette = button.dataset.palette;
+    if (!palette || !isPaletteId(palette)) return;
+    const { id } = engine.getStyle();
+    if (id === "none") {
+      statusEl.textContent = "Pick a style first. Palettes recolour styled cells.";
+      return;
+    }
+    engine.setStyle({ id, palette });
+    syncStyleControls();
+  });
+}
+
+styleCellControl.addEventListener("input", () => {
+  const { id } = engine.getStyle();
+  if (id !== "none") engine.setStyle({ id, cell: Number(styleCellControl.value) });
+});
+
 const MATCH_STATUS: Record<MatchStrategy, string> = {
   transport: "Smart: every piece finds its place by position and colour. Try App v1 → App v2.",
   spatial: "Spatial: pieces keep their relative place. Colour is ignored.",
@@ -582,8 +632,12 @@ function copySnippet(): string {
       ? ""
       : `\nengine.setDriver(${JSON.stringify(driver)});\nengine.setProgress(${engine.getProgress().toFixed(3)});`;
   const match = engine.getMatch();
-  const createOptions =
-    match === "transport" ? "{ canvas }" : `{ canvas, match: ${JSON.stringify(match)} }`;
+  const style = engine.getStyle();
+  const extras = [
+    match === "transport" ? "" : `match: ${JSON.stringify(match)}`,
+    style.id === "none" ? "" : `style: ${JSON.stringify({ id: style.id, ...style.config })}`,
+  ].filter(Boolean);
+  const createOptions = extras.length ? `{ canvas, ${extras.join(", ")} }` : "{ canvas }";
   return `import { ${imports} } from "scree-core";
 
 const canvas = document.querySelector("canvas");

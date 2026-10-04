@@ -44,6 +44,23 @@
           <span>Opacity</span>
           <input id="renderer-opacity" type="range" min="0.35" max="1" step="0.05" value="0.675" />
         </label>
+        <p class="drop-title style-title">Style</p>
+        <nav class="renderers compact" aria-label="Style">
+          <button type="button" data-style="none" aria-pressed="true">None</button>
+          <button type="button" data-style="dither">Dither</button>
+          <button type="button" data-style="halftone">Halftone</button>
+          <button type="button" data-style="ascii">ASCII</button>
+          <button type="button" data-style="pixel">Pixel</button>
+        </nav>
+        <nav class="renderers compact" aria-label="Palette">
+          <button type="button" data-palette="source" aria-pressed="true">Source</button>
+          <button type="button" data-palette="mono">Mono</button>
+          <button type="button" data-palette="duotone">Duotone</button>
+        </nav>
+        <label class="tune">
+          <span>Cell</span>
+          <input id="style-cell" type="range" min="2" max="24" step="1" value="3" />
+        </label>
       </section>
 
       <section class="chrome left-stack" aria-label="Field controls">

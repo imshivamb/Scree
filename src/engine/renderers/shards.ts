@@ -55,12 +55,17 @@ void main() {
 const FRAGMENT = /* glsl */ `
 uniform float uGlow;
 uniform float uOpacity;
+uniform float uFlatOutput;
 
 varying vec3 vColor;
 varying float vFlight;
 varying float vSeed;
 
 void main() {
+  if (uFlatOutput > 0.5) {
+    gl_FragColor = vec4(vColor, 1.0);
+    return;
+  }
   float facet = 0.67 + vSeed * 0.28 + vFlight * 0.12;
   vec3 color = vColor * facet + vec3(uGlow * 0.12);
   gl_FragColor = vec4(color, 0.84 * uOpacity);
@@ -146,6 +151,10 @@ export class ShardsRenderer implements ParticleRenderer {
   setConfig(config: RendererConfig): void {
     this.config = config;
     this.refreshSize();
+  }
+
+  setFlatOutput(flat: boolean): void {
+    this.material.uniforms.uFlatOutput.value = flat ? 1 : 0;
   }
 
   getProgress(): number {

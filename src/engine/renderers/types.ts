@@ -20,6 +20,8 @@ export interface ParticleRenderer {
   setDpr(dpr: number): void;
   setViewport(width: number, height: number): void;
   setConfig(config: RendererConfig): void;
+  /** While a style redraws the field, write plain colour with coverage 1. */
+  setFlatOutput(flat: boolean): void;
   getProgress(): number;
   dispose(): void;
 }

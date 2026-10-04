@@ -2,6 +2,16 @@ import * as THREE from "three";
 
 import { DEFAULT_MATCH, MatchCache, type MatchStrategy } from "./match";
 import {
+  DEFAULT_STYLE_CONFIGS,
+  mergeStyleConfig,
+  parseHexColor,
+  resolveStyleInput,
+  StylePass,
+  type StyleConfig,
+  type StyleId,
+  type StyleInput,
+} from "./styles";
+import {
   dominantBehavior,
   exclusiveBehavior,
   mixAtProgress,
@@ -70,6 +80,8 @@ export type ScreeOptions = {
   renderer?: RendererId;
   /** How points pair up between forms. Default "transport". */
   match?: MatchStrategy;
+  /** How the field is drawn: "none" (the points), "dither", "halftone", "ascii", "pixel". */
+  style?: StyleInput;
   onTransitionStateChange?: (isTransitioning: boolean) => void;
   onProgress?: (progress: number) => void;
   onError?: (message: string) => void;
@@ -127,6 +139,11 @@ export class Scree {
   private fieldDestinationId: string | null = null;
   private match: MatchStrategy;
   private readonly matches = new MatchCache();
+  private styleId: StyleId = "none";
+  private readonly styleConfigs: Record<StyleId, StyleConfig> = structuredClone(
+    DEFAULT_STYLE_CONFIGS,
+  );
+  private stylePass: StylePass | null = null;
   private sourceScale = new THREE.Vector3(1, 1, 1);
   private targetScale = new THREE.Vector3(1, 1, 1);
   private progress = 1;
@@ -185,6 +202,7 @@ export class Scree {
       this.webgl.getPixelRatio(),
     );
     this.scene.add(this.skin.object);
+    if (options.style) this.setStyle(options.style);
     options.canvas.addEventListener("webglcontextlost", this.handleContextLost);
     document.addEventListener("visibilitychange", this.visibilityHandler);
     this.startLoop();
@@ -322,6 +340,28 @@ export class Scree {
 
   getMatch(): MatchStrategy {
     return this.match;
+  }
+
+  /**
+   * Change how the field is drawn. Each style remembers its own config, so
+   * switching away and back keeps your cell size and colours.
+   */
+  setStyle(input: StyleInput): void {
+    const { id, config } = resolveStyleInput(input);
+    const next = mergeStyleConfig(this.styleConfigs[id], config);
+    parseHexColor(next.ink);
+    parseHexColor(next.shade);
+    this.styleConfigs[id] = next;
+    this.styleId = id;
+    this.skin.setFlatOutput(id !== "none");
+    if (id !== "none" && !this.stylePass) {
+      this.stylePass = new StylePass();
+      this.syncStyleSize();
+    }
+  }
+
+  getStyle(): { id: StyleId; config: StyleConfig } {
+    return { id: this.styleId, config: { ...this.styleConfigs[this.styleId] } };
   }
 
   /**
@@ -476,6 +516,13 @@ export class Scree {
     this.webgl.setSize(safeWidth, safeHeight, false);
     this.skin.setViewport(safeWidth, safeHeight);
     this.skin.setDpr(this.webgl.getPixelRatio());
+    this.syncStyleSize();
+  }
+
+  private syncStyleSize(): void {
+    if (!this.stylePass) return;
+    const size = this.webgl.getDrawingBufferSize(new THREE.Vector2());
+    this.stylePass.setSize(size.x, size.y, this.webgl.getPixelRatio());
   }
 
   setPaused(paused: boolean): void {
@@ -501,6 +548,7 @@ export class Scree {
     document.removeEventListener("visibilitychange", this.visibilityHandler);
     this.scene.remove(this.skin.object);
     this.skin.dispose();
+    this.stylePass?.dispose();
     this.webgl.dispose();
   }
 
@@ -522,6 +570,7 @@ export class Scree {
     this.skin.setDpr(this.webgl.getPixelRatio());
     this.skin.setLook(this.look);
     this.skin.setConfig(this.rendererLooks[this.skin.id]);
+    this.skin.setFlatOutput(this.styleId !== "none");
     this.skin.setProgress(this.progress);
   }
 
@@ -539,7 +588,17 @@ export class Scree {
       if (this.disposed || this.paused) return;
       this.stepTween(time);
       this.skin.setTime(time / 1000);
-      this.webgl.render(this.scene, this.camera);
+      if (this.styleId === "none" || !this.stylePass) {
+        this.webgl.render(this.scene, this.camera);
+      } else {
+        this.stylePass.render(
+          this.webgl,
+          this.scene,
+          this.camera,
+          this.styleId,
+          this.styleConfigs[this.styleId],
+        );
+      }
       this.frameId = requestAnimationFrame(render);
     };
 

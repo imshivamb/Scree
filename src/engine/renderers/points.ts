@@ -43,6 +43,7 @@ void main() {
 const FRAGMENT = /* glsl */ `
 uniform float uGlow;
 uniform float uOpacity;
+uniform float uFlatOutput;
 
 varying vec3 vColor;
 varying float vFlight;
@@ -51,6 +52,10 @@ void main() {
   vec2 point = gl_PointCoord * 2.0 - 1.0;
   float radius = length(point);
   if (radius > 1.0) discard;
+  if (uFlatOutput > 0.5) {
+    gl_FragColor = vec4(vColor, 1.0);
+    return;
+  }
 
   float core = smoothstep(1.0, 0.18, radius);
   float halo = smoothstep(1.0, 0.0, radius) * uGlow * (0.45 + vFlight * 0.35);
@@ -158,6 +163,10 @@ export class PointsRenderer implements ParticleRenderer {
     this.config = config;
     this.material.uniforms.uOpacity.value = config.opacity;
     this.refreshSize();
+  }
+
+  setFlatOutput(flat: boolean): void {
+    this.material.uniforms.uFlatOutput.value = flat ? 1 : 0;
   }
 
   getProgress(): number {

@@ -184,7 +184,25 @@ h1 {
 
 .renderers {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.renderers.compact {
+  gap: 6px;
+}
+
+.renderers.compact button {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
+
+.renderers + .renderers {
+  margin-top: 8px;
+}
+
+.style-title {
+  margin-top: 14px;
 }
 
 .tune {

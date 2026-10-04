@@ -21,6 +21,7 @@ export function createSharedFieldUniforms(look: MorphLook): {
   uGlow: { value: number };
   uSourceScale: { value: THREE.Vector3 };
   uTargetScale: { value: THREE.Vector3 };
+  uFlatOutput: { value: number };
 } {
   return {
     uProgress: { value: 1 },
@@ -53,6 +54,8 @@ export function createSharedFieldUniforms(look: MorphLook): {
     uGlow: { value: look.glow },
     uSourceScale: { value: new THREE.Vector3(1, 1, 1) },
     uTargetScale: { value: new THREE.Vector3(1, 1, 1) },
+    // 1 while a style redraws the field: plain colour, coverage 1, no glow.
+    uFlatOutput: { value: 0 },
   };
 }
 

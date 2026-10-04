@@ -94,6 +94,22 @@ Every target is stored in a canonical order along a Hilbert curve, so `spatial` 
 
 `size` is a multiplier around the renderer’s own default, not a pixel value.
 
+### Styles
+
+A style redraws the same moving pieces per cell, so every motion and every match works in every style.
+
+```ts
+createScree({ canvas, style: "halftone" });
+engine.setStyle({ id: "dither", cell: 3, palette: "source" });
+engine.setStyle({ id: "ascii", palette: "mono", ink: "#eef3ff" });
+engine.setStyle("none"); // back to the points as they are
+```
+
+- Styles: `none`, `dither`, `halftone`, `ascii`, `pixel`.
+- `cell`: cell size in CSS pixels.
+- `palette`: `source` (the form's own colours), `mono` (one `ink`), `duotone` (`shade` → `ink`).
+- Each style remembers its own settings when you switch away and back.
+
 Presets: `organic`, `flow`, `dissolve`, `explode`, `implode`, `vortex`, `reveal`, `disperse`, `reassemble`. Weights can also be envelopes: `{ expand: { from: 0, to: 0.8, easing: "organic" } }`.
 
 ## Contributor commands
@@ -108,4 +124,4 @@ The package build emits an ESM bundle and declarations under `dist`. Three.js is
 
 ## What this is not
 
-Audio, webcam, WebGPU, physics, or a React package. Those come later.
+Audio, webcam, WebGPU, physics, or a React package. Video export and a no-code studio are next.

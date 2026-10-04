@@ -3,6 +3,14 @@ export type { MorphToOptions, ScreeOptions, TransitionOptions } from "./scene";
 export { DEFAULT_MATCH, isMatchStrategy, MATCH_STRATEGIES } from "./match";
 export type { MatchStrategy } from "./match";
 export {
+  DEFAULT_STYLE_CONFIGS,
+  isPaletteId,
+  isStyleId,
+  PALETTE_IDS,
+  STYLE_IDS,
+} from "./styles";
+export type { PaletteId, StyleConfig, StyleId, StyleInput } from "./styles";
+export {
   TRANSITION_PRESET_IDS,
   TRANSITION_PRESETS,
 } from "./transitions";
