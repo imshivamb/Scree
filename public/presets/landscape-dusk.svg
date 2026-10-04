@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b1f4b"/>
+      <stop offset="0.5" stop-color="#4a3a8c"/>
+      <stop offset="1" stop-color="#c46aa0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#e6ecff" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#e6ecff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="far" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6a4f9e"/>
+      <stop offset="1" stop-color="#8f5fa6"/>
+    </linearGradient>
+    <linearGradient id="mid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b2f73"/>
+      <stop offset="1" stop-color="#53397f"/>
+    </linearGradient>
+    <linearGradient id="near" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#15163a"/>
+      <stop offset="1" stop-color="#211d4d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#sky)"/>
+  <circle cx="300" cy="200" r="150" fill="url(#glow)"/>
+  <circle cx="300" cy="200" r="56" fill="#f4f6ff"/>
+  <circle cx="322" cy="188" r="50" fill="#5a4a9a" opacity="0.35"/>
+  <g fill="#ffffff">
+    <circle cx="640" cy="90" r="2.2"/><circle cx="760" cy="150" r="1.6"/><circle cx="910" cy="70" r="2.4"/>
+    <circle cx="1040" cy="190" r="1.8"/><circle cx="1180" cy="110" r="2"/><circle cx="520" cy="210" r="1.4"/>
+    <circle cx="120" cy="80" r="1.8"/><circle cx="460" cy="60" r="1.6"/><circle cx="1100" cy="40" r="1.4"/>
+  </g>
+  <path d="M0 430 L160 330 L300 400 L430 290 L560 380 L700 310 L820 390 L960 300 L1100 380 L1280 320 L1280 720 L0 720 Z" fill="url(#far)"/>
+  <path d="M0 520 L140 440 L290 510 L450 410 L610 500 L760 430 L900 520 L1060 420 L1190 500 L1280 470 L1280 720 L0 720 Z" fill="url(#mid)"/>
+  <path d="M0 600 L180 520 L340 610 L520 540 L690 620 L880 540 L1020 630 L1180 560 L1280 590 L1280 720 L0 720 Z" fill="url(#near)"/>
+  <g fill="#ffd27a">
+    <rect x="610" y="585" width="6" height="8" rx="1"/><rect x="640" y="592" width="6" height="8" rx="1"/>
+    <rect x="905" y="560" width="6" height="8" rx="1"/><rect x="930" y="566" width="6" height="8" rx="1"/>
+  </g>
+</svg>

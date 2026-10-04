@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <circle cx="400" cy="300" r="150" fill="#2b5bd7"/>
+  <circle cx="400" cy="300" r="96" fill="#7fa7ff"/>
+  <path d="M320 300 L400 210 L480 300 L400 390 Z" fill="#ffffff"/>
+  <text x="400" y="600" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="120" font-style="italic" fill="#2b5bd7">northwind</text>
+</svg>

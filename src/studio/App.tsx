@@ -66,10 +66,11 @@ const BACKGROUNDS = [
 const reducedMotion =
   typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-function sampleSlots(templateId: TemplateId): Slots {
+function sampleSlots(templateId: TemplateId, sampleId?: string): Slots {
   const template = TEMPLATES[templateId];
+  const set = template.samples.find((sample) => sample.id === sampleId) ?? template.samples[0];
   const slots: Slots = {};
-  for (const [id, sample] of Object.entries(template.samples) as [SlotId, { src: string; name: string }][]) {
+  for (const [id, sample] of Object.entries(set?.slots ?? {}) as [SlotId, { src: string; name: string }][]) {
     slots[id] = { src: sample.src, name: sample.name, isSample: true };
   }
   return slots;
@@ -108,6 +109,7 @@ engine.transition({ from: "before", to: "after", durationSeconds: ${look.duratio
 export function App() {
   const [templateId, setTemplateId] = useState<TemplateId>("launch");
   const [slots, setSlots] = useState<Slots>(() => sampleSlots("launch"));
+  const [sampleId, setSampleId] = useState<string>(TEMPLATES.launch.samples[0]?.id ?? "");
   const [look, setLook] = useState<Look>(TEMPLATES.launch.look);
   const [quality, setQuality] = useState<ExportQuality>("1080p");
   const [format, setFormat] = useState<ExportFormat>("mp4");
@@ -169,6 +171,7 @@ export function App() {
     if (id === templateId) return;
     setTemplateId(id);
     setSlots(sampleSlots(id));
+    setSampleId(TEMPLATES[id].samples[0]?.id ?? "");
     setLook(TEMPLATES[id].look);
   };
 
@@ -268,18 +271,24 @@ export function App() {
             </div>
           </Section>
 
-          <Section
-            title="Your images"
-            aside={
-              usingSamples ? (
-                <span className="tag">Sample</span>
-              ) : (
-                <button type="button" className="link" onClick={() => setSlots(sampleSlots(templateId))}>
-                  Use sample
+          <Section title="Your images">
+            <div className="samples" role="radiogroup" aria-label="Samples">
+              {template.samples.map((sample) => (
+                <button
+                  key={sample.id}
+                  type="button"
+                  role="radio"
+                  className="sample"
+                  aria-checked={usingSamples && sample.id === sampleId}
+                  onClick={() => {
+                    setSampleId(sample.id);
+                    setSlots(sampleSlots(templateId, sample.id));
+                  }}
+                >
+                  {sample.label}
                 </button>
-              )
-            }
-          >
+              ))}
+            </div>
             <div className="slots">
               {template.slots.map((slot) => {
                 const value = slots[slot.id];

@@ -242,6 +242,32 @@ a {
   border-color: var(--accent);
 }
 
+/* Sample picker */
+
+.samples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sample {
+  border: 1px solid var(--line);
+  background: none;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  color: var(--mute);
+}
+
+.sample:hover {
+  color: var(--ink);
+}
+
+.sample[aria-checked="true"] {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
 /* Drop slots */
 
 .slots {

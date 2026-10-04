@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffb37a"/>
+      <stop offset="0.55" stop-color="#ffd9a8"/>
+      <stop offset="1" stop-color="#fff1d6"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff7e0"/>
+      <stop offset="0.6" stop-color="#ffe2a3"/>
+      <stop offset="1" stop-color="#ffcf87" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="far" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e98f73"/>
+      <stop offset="1" stop-color="#f3b38c"/>
+    </linearGradient>
+    <linearGradient id="mid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b85c5c"/>
+      <stop offset="1" stop-color="#d98468"/>
+    </linearGradient>
+    <linearGradient id="near" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6d3550"/>
+      <stop offset="1" stop-color="#8e4458"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#sky)"/>
+  <circle cx="860" cy="300" r="180" fill="url(#sun)"/>
+  <circle cx="860" cy="300" r="78" fill="#fff6dc"/>
+  <path d="M0 470 L130 380 L240 430 L380 300 L520 410 L640 350 L770 420 L900 330 L1040 410 L1160 360 L1280 400 L1280 720 L0 720 Z" fill="url(#far)"/>
+  <path d="M0 540 L170 420 L300 500 L460 380 L600 520 L720 450 L860 540 L1010 430 L1150 520 L1280 470 L1280 720 L0 720 Z" fill="url(#mid)"/>
+  <path d="M0 620 L210 500 L360 590 L520 520 L700 640 L860 560 L1040 650 L1180 580 L1280 610 L1280 720 L0 720 Z" fill="url(#near)"/>
+  <g fill="#5a2a45" opacity="0.55">
+    <path d="M520 520 L560 560 L548 575 L600 600 L700 640 L520 640 Z"/>
+    <path d="M210 500 L240 540 L228 560 L280 590 L360 590 L210 600 Z"/>
+  </g>
+  <g fill="#fff6e6" opacity="0.85">
+    <path d="M180 170 q30 -22 60 0 q25 -16 50 2 q-55 14 -110 -2 z"/>
+    <path d="M980 120 q24 -18 48 0 q20 -12 40 2 q-44 12 -88 -2 z"/>
+  </g>
+</svg>
