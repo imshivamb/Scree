@@ -5,6 +5,8 @@ export type ParticleTarget = {
   colors: Float32Array;
   seeds: Float32Array;
   normals: Float32Array;
+  /** Optional part per particle (e.g. GLB sub-mesh). Parts stay contiguous. */
+  groupIds?: Uint16Array;
   count: number;
 };
 

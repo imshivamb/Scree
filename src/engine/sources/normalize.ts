@@ -1,3 +1,4 @@
+import { canonicalOrder, permuteTarget } from "./order";
 import { mulberry32 } from "./rng";
 import type { ParticleTarget } from "./types";
 
@@ -75,9 +76,12 @@ export function finalizeTarget(input: {
   colors?: Float32Array;
   seeds?: Float32Array;
   normals?: Float32Array;
+  groupIds?: Uint16Array;
   seed?: number;
   normalize?: boolean;
   maxExtent?: number;
+  /** "spatial" (default) sorts along a Hilbert curve; "sampled" keeps input order. */
+  order?: "spatial" | "sampled";
 }): ParticleTarget {
   if (input.positions.length % 3 !== 0 || input.positions.length === 0) {
     throw new Error("Particle target positions must be a non-empty xyz buffer");
@@ -101,14 +105,20 @@ export function finalizeTarget(input: {
   if (normals.length !== count * 3) {
     throw new Error("Particle target normals must match the particle count");
   }
+  if (input.groupIds && input.groupIds.length !== count) {
+    throw new Error("Particle target group ids must match the particle count");
+  }
 
-  return {
+  const target: ParticleTarget = {
     positions: input.positions,
     colors,
     seeds,
     normals,
+    ...(input.groupIds ? { groupIds: input.groupIds } : {}),
     count,
   };
+  if (input.order === "sampled") return target;
+  return permuteTarget(target, canonicalOrder(target.positions, target.groupIds));
 }
 
 export function rotatePositions(

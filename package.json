@@ -2,7 +2,7 @@
   "name": "scree-core",
   "version": "0.1.0",
   "type": "module",
-  "description": "A GPU field engine: anything in, anything in motion. One particle field, a controlled cloud in between.",
+  "description": "Every piece finds its place. Turn a screenshot, logo, photo, word, or 3D model into the next one, with every piece traveling to its match.",
   "scripts": {
     "dev": "vite",
     "build": "npm run build:lib && npm run build:types && npm run build:playground",

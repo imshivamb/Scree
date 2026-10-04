@@ -5,10 +5,12 @@ import {
   createTextTarget,
   createTorusKnotTarget,
   isDriverId,
+  isMatchStrategy,
   isRendererId,
   Scree,
   type BehaviorMix,
   type DriverId,
+  type MatchStrategy,
   type ProceduralTargetId,
   type TransitionPresetId,
 } from "../engine";
@@ -27,6 +29,8 @@ const IMAGE_PRESETS = [
   { id: "mark", src: "/presets/mark.svg" },
   { id: "nova", src: "/presets/nova.svg" },
   { id: "glyph", src: "/presets/glyph.svg" },
+  { id: "app-v1", src: "/presets/app-v1.svg" },
+  { id: "app-v2", src: "/presets/app-v2.svg" },
 ] as const;
 
 const SHAPES: ProceduralTargetId[] = [
@@ -81,6 +85,9 @@ const transitionButtons = [
 ];
 const driverButtons = [
   ...document.querySelectorAll<HTMLButtonElement>("[data-driver]"),
+];
+const matchButtons = [
+  ...document.querySelectorAll<HTMLButtonElement>("[data-match]"),
 ];
 const panels = [...document.querySelectorAll<HTMLElement>("[data-panel]")];
 
@@ -143,6 +150,8 @@ const scrollTrack = scrollSpace;
 let customReady = false;
 let liveImageId = "mark";
 let liveShapeId: ProceduralTargetId = "sphere";
+/** Where the last picked morph started, so a Match change can replay it. */
+let previousTarget: string | null = null;
 let fileARef: File | null = null;
 let fileBRef: File | null = null;
 
@@ -219,6 +228,8 @@ function morphSource(id: string, source: "image" | "text" | "mesh" | "shape"): v
   customReady = false;
   if (source === "image") liveImageId = id;
   if (source === "shape") liveShapeId = id as ProceduralTargetId;
+  const current = engine.getActiveTarget();
+  if (current !== id) previousTarget = current;
   engine.morphTo(id);
 }
 
@@ -309,6 +320,7 @@ for (const button of shapeButtons) {
 
 const TRANSITION_STATUS: Record<TransitionPresetId | "custom", string> = {
   organic: "Expand + turbulence + orbit. The default mix.",
+  flow: "Every piece travels straight to its place. Best with Smart match.",
   dissolve: "The form thins through coherent noise.",
   explode: "Expand and scatter at once.",
   implode: "The field pulls in, then settles.",
@@ -469,6 +481,28 @@ function setShowcase(on: boolean): void {
     "Scroll the page. Image → Text → 3D → Shape. Same particles the whole way.";
 }
 
+const MATCH_STATUS: Record<MatchStrategy, string> = {
+  transport: "Smart: every piece finds its place by position and colour. Try App v1 → App v2.",
+  spatial: "Spatial: pieces keep their relative place. Colour is ignored.",
+  random: "Random: no pairing. The classic dissolve.",
+};
+
+for (const button of matchButtons) {
+  button.addEventListener("click", () => {
+    const id = button.dataset.match;
+    if (!id || !isMatchStrategy(id)) return;
+    engine.setMatch(id);
+    setPressed(matchButtons, "match", id);
+    const current = engine.getActiveTarget();
+    if (current && previousTarget && previousTarget !== current) {
+      engine.transition({ from: previousTarget, to: current, replay: true });
+    } else if (current) {
+      engine.morphTo(current, { replay: true });
+    }
+    statusEl.textContent = MATCH_STATUS[id];
+  });
+}
+
 for (const button of driverButtons) {
   button.addEventListener("click", () => {
     const id = button.dataset.driver;
@@ -547,12 +581,15 @@ function copySnippet(): string {
     driver === "auto"
       ? ""
       : `\nengine.setDriver(${JSON.stringify(driver)});\nengine.setProgress(${engine.getProgress().toFixed(3)});`;
+  const match = engine.getMatch();
+  const createOptions =
+    match === "transport" ? "{ canvas }" : `{ canvas, match: ${JSON.stringify(match)} }`;
   return `import { ${imports} } from "scree-core";
 
 const canvas = document.querySelector("canvas");
 if (!canvas) throw new Error("Scree canvas not found.");
 
-const engine = createScree({ canvas });
+const engine = createScree(${createOptions});
 ${target.setup}
 engine.addTarget(${JSON.stringify(target.id)}, target);
 engine.setRenderer(${JSON.stringify(engine.getRenderer())});

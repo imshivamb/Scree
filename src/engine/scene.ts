@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { DEFAULT_MATCH, MatchCache, type MatchStrategy } from "./match";
 import {
   dominantBehavior,
   exclusiveBehavior,
@@ -45,6 +46,8 @@ export type MorphToOptions = {
   renderer?: RendererId;
   behavior?: MotionInput;
   replay?: boolean;
+  /** How points pair up for this morph. Defaults to the engine's match. */
+  match?: MatchStrategy;
 };
 
 export type TransitionOptions = {
@@ -52,6 +55,7 @@ export type TransitionOptions = {
   to: string;
   durationSeconds?: number;
   motion?: MotionInput;
+  match?: MatchStrategy;
   renderer?: RendererId;
   replay?: boolean;
   cameraZ?: number;
@@ -64,6 +68,8 @@ export type ScreeOptions = {
   reducedMotion?: boolean;
   look?: Partial<MorphLook>;
   renderer?: RendererId;
+  /** How points pair up between forms. Default "transport". */
+  match?: MatchStrategy;
   onTransitionStateChange?: (isTransitioning: boolean) => void;
   onProgress?: (progress: number) => void;
   onError?: (message: string) => void;
@@ -117,6 +123,10 @@ export class Scree {
   private skin: ParticleRenderer;
   private field: { source: ParticleTarget; destination: ParticleTarget } | null =
     null;
+  /** Target id whose (matched) arrangement is `field.destination`. */
+  private fieldDestinationId: string | null = null;
+  private match: MatchStrategy;
+  private readonly matches = new MatchCache();
   private sourceScale = new THREE.Vector3(1, 1, 1);
   private targetScale = new THREE.Vector3(1, 1, 1);
   private progress = 1;
@@ -152,6 +162,7 @@ export class Scree {
     this.onProgress = options.onProgress;
     this.onError = options.onError;
     this.look = { ...DEFAULT_LOOK, ...options.look };
+    this.match = options.match ?? DEFAULT_MATCH;
     this.camera.position.set(0, 0, 3.1);
     this.camera.lookAt(0, 0, 0);
 
@@ -205,7 +216,7 @@ export class Scree {
 
     if (!this.activeTarget) {
       this.activeTarget = id;
-      this.writeField(target, target);
+      this.writeField(target, target, id);
       this.sourceScale.copy(this.targetScales.get(id) ?? new THREE.Vector3(1, 1, 1));
       this.targetScale.copy(this.sourceScale);
       this.syncSkin();
@@ -238,11 +249,12 @@ export class Scree {
       return;
     }
 
-    const source =
-      replaced ??
-      (sourceId ? this.targets.get(sourceId) : destination) ??
-      destination;
-    this.writeField(source, destination);
+    const source = replaced ?? this.displayedArrangement(sourceId) ?? destination;
+    this.writeField(
+      source,
+      this.matches.get(source, destination, options.match ?? this.match),
+      id,
+    );
     this.sourceScale.copy(
       this.targetScales.get(sourceId ?? id) ?? new THREE.Vector3(1, 1, 1),
     );
@@ -299,7 +311,27 @@ export class Scree {
       replay: options.replay,
       cameraZ: options.cameraZ,
       scale: options.scale,
+      match: options.match,
     });
+  }
+
+  /** Change how points pair up; applies from the next morph. */
+  setMatch(match: MatchStrategy): void {
+    this.match = match;
+  }
+
+  getMatch(): MatchStrategy {
+    return this.match;
+  }
+
+  /**
+   * The points as they sit on screen for `id`: after a morph they keep the
+   * order they were matched in, so the next morph starts without a jump.
+   */
+  private displayedArrangement(id: string | null): ParticleTarget | undefined {
+    if (!id) return undefined;
+    if (id === this.fieldDestinationId && this.field) return this.field.destination;
+    return this.targets.get(id);
   }
 
   private frameCamera(target: ParticleTarget, cameraZ: number): void {
@@ -472,8 +504,13 @@ export class Scree {
     this.webgl.dispose();
   }
 
-  private writeField(source: ParticleTarget, destination: ParticleTarget): void {
+  private writeField(
+    source: ParticleTarget,
+    destination: ParticleTarget,
+    destinationId: string,
+  ): void {
     this.field = { source, destination };
+    this.fieldDestinationId = destinationId;
   }
 
   private syncSkin(): void {

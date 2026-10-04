@@ -130,6 +130,7 @@ h1 {
 
 .presets,
 .drivers,
+.matches,
 .motions,
 .transitions {
   display: flex;
@@ -308,6 +309,7 @@ html.showcase-drive #scroll-space {
 .renderers button,
 .motions button,
 .drivers button,
+.matches button,
 .transitions button,
 .presets-row button,
 .shape-grid button,
@@ -326,7 +328,8 @@ html.showcase-drive #scroll-space {
   cursor: pointer;
 }
 
-.drivers button {
+.drivers button,
+.matches button {
   border-color: rgba(243, 194, 122, 0.28);
 }
 
@@ -356,7 +359,9 @@ html.showcase-drive #scroll-space {
 }
 
 .drivers button:hover,
-.drivers button[aria-pressed="true"] {
+.drivers button[aria-pressed="true"],
+.matches button:hover,
+.matches button[aria-pressed="true"] {
   border-color: rgba(243, 194, 122, 0.7);
   color: var(--driver);
 }

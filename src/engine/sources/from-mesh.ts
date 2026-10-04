@@ -219,6 +219,7 @@ export function createMeshTargetFromObject(
   const positions = new Float32Array(count * 3);
   const normals = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
+  const groupIds = new Uint16Array(count);
   const fallback = options.color ?? [0.42, 0.7, 0.94];
   let written = 0;
 
@@ -232,6 +233,7 @@ export function createMeshTargetFromObject(
             Math.max(1, Math.round(((areas[meshIndex] ?? 0) / totalArea) * count)),
           );
     sampleMesh(mesh, share, positions, normals, colors, written, random, fallback);
+    groupIds.fill(Math.min(meshIndex, 0xffff), written, written + share);
     written += share;
   });
 
@@ -239,6 +241,7 @@ export function createMeshTargetFromObject(
     positions,
     colors,
     normals,
+    ...(meshes.length > 1 ? { groupIds } : {}),
     seed: resolveSeed(options),
     maxExtent: MESH_EXTENT,
   });

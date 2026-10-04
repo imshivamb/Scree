@@ -1,14 +1,21 @@
 # Scree
 
-A small WebGL kit that keeps **one field of points** and morphs that same field from one shape to another.
+**Every piece finds its place.**
 
-It is not a crossfade and not two pictures stacked. An image, SVG, word, mesh, or procedural shape is sampled into the same particle target. Those points destablize, open into a cloud, and settle as the next form. The engine does not care where the target came from.
+Drop in two things (a screenshot, a logo, a photo, a word, a 3D model) and Scree turns one into the other as a single transformation you can follow. It is not a cut and not a crossfade. The first form breaks into pieces, and each piece travels to its matching place in the next form: the blue button flows to where the blue button went.
 
-The playground is a demo of the engine.
+Scree is named after the slope of broken rock under a cliff, where every falling stone settles where it fits.
 
 **Live:** [scree-tau.vercel.app](https://scree-tau.vercel.app)
 
-Pushes to `main` redeploy that URL.
+### What you can make
+
+- **Launch and changelog moments:** old UI → new UI, v1 → v2.
+- **Logo reveals:** a mark that forms from loose pieces.
+- **Hero and scroll sections:** a page that turns this into that as you scroll.
+- **Before → after** for anything you can draw, photograph, or model.
+
+Today Scree is a browser library (`scree-core`) and a playground. Video export, more styles, and a no-code studio are next.
 
 ## Playground
 
@@ -18,7 +25,7 @@ npm test
 npm run dev
 ```
 
-Open the local Vite URL. The **Target** panel is Image / Text / 3D / Shape. **Points / Sprites / Shards** change the draw. **Organic / Explode / Dissolve / Vortex** mix motions. **Auto / Manual / Scroll / Pointer** write progress. **Showcase** scrolls Image → Text → 3D → Shape on the same field. **Copy code** copies a snippet you can paste next to a Scree canvas. Files stay in the browser.
+Open the local Vite URL. Try **App v1 → App v2** with **Smart** match and the **Flow** transition, then switch to **Random** to see what matching does. The **Target** panel is Image / Text / 3D / Shape. **Points / Sprites / Shards** change the draw. **Smart / Spatial / Random** decide how pieces pair up. **Organic / Flow / Explode / Dissolve / Vortex** mix motions. **Auto / Manual / Scroll / Pointer** write progress. **Showcase** scrolls Image → Text → 3D → Shape on the same field. **Copy code** copies a snippet you can paste next to a Scree canvas. Files stay in the browser.
 
 ## Install
 
@@ -63,7 +70,23 @@ engine.setRenderer("sprites");
 
 The same API works with `new Scree({ canvas })`; `createScree` is the recommended entry point. Defaults choose quality and reduced-motion behavior from the browser. `setBehavior("expand")` is still exclusive expand. A mix adds displacements; it does not swap the field. `transition` picks the pair and the mix. Drivers only write `t` and pointer. Changing one of those does not require changing the others.
 
-Every generator returns the same `ParticleTarget`: `{ positions, colors, seeds, normals, count }`. Targets must share a particle count. `setRenderer` only changes how the field is drawn.
+Every generator returns the same `ParticleTarget`: `{ positions, colors, seeds, normals, groupIds?, count }`. Targets must share a particle count. `setRenderer` only changes how the field is drawn.
+
+### Match
+
+Match decides which point in one form travels to which point in the next.
+
+```ts
+createScree({ canvas });                     // match: "transport" (default)
+engine.setMatch("spatial");                  // from the next morph on
+engine.transition({ to: "after", match: "random" });
+```
+
+- `transport`: pairs by place **and colour**, so regions travel to their counterparts (a moved button, a recoloured chart). The pairing is approximate optimal transport, computed once per pair and cached; 16k points take about a quarter of a second.
+- `spatial`: pairs by relative place only. Shapes line up; colour is ignored.
+- `random`: no pairing. The classic dissolve.
+
+Every target is stored in a canonical order along a Hilbert curve, so `spatial` is free. A GLB with several meshes gets one group per mesh (`groupIds`), and groups stay together. Use the `flow` motion when you want viewers to see what moved; `organic` opens a cloud that hides it.
 
 - `points` — glow dots. Default and cheapest.
 - `sprites` — instanced soft quads, a little larger than points.
@@ -71,7 +94,7 @@ Every generator returns the same `ParticleTarget`: `{ positions, colors, seeds, 
 
 `size` is a multiplier around the renderer’s own default, not a pixel value.
 
-Presets: `organic`, `dissolve`, `explode`, `implode`, `vortex`, `reveal`, `disperse`, `reassemble`. Weights can also be envelopes: `{ expand: { from: 0, to: 0.8, easing: "organic" } }`.
+Presets: `organic`, `flow`, `dissolve`, `explode`, `implode`, `vortex`, `reveal`, `disperse`, `reassemble`. Weights can also be envelopes: `{ expand: { from: 0, to: 0.8, easing: "organic" } }`.
 
 ## Contributor commands
 

@@ -1,5 +1,7 @@
 export { createScree, Scree } from "./scene";
 export type { MorphToOptions, ScreeOptions, TransitionOptions } from "./scene";
+export { DEFAULT_MATCH, isMatchStrategy, MATCH_STRATEGIES } from "./match";
+export type { MatchStrategy } from "./match";
 export {
   TRANSITION_PRESET_IDS,
   TRANSITION_PRESETS,

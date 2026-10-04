@@ -4,6 +4,7 @@ import { exclusiveBehavior, specFromMix } from "./motion-field";
 
 export const TRANSITION_PRESET_IDS = [
   "organic",
+  "flow",
   "dissolve",
   "explode",
   "implode",
@@ -17,6 +18,8 @@ export type TransitionPresetId = (typeof TRANSITION_PRESET_IDS)[number];
 
 export const TRANSITION_PRESETS: Record<TransitionPresetId, MotionSpec> = {
   organic: { expand: 0.8, turbulence: 0.35, orbit: 0.15 },
+  /** Pieces travel almost straight to their place: shows what moved. */
+  flow: { settle: 0.6 },
   dissolve: { settle: 0.25, turbulence: 0.9 },
   explode: { expand: 1, scatter: 0.7 },
   implode: { implode: 1, turbulence: 0.25 },
