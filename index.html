@@ -134,6 +134,39 @@
           <button type="button" id="showcase" aria-pressed="false">Showcase</button>
         </div>
 
+        <div class="group group-export">
+          <p class="group-label">Export <span>the last morph, frame by frame</span></p>
+          <div class="field-row export-row">
+            <label class="field">
+              <span>Size</span>
+              <select id="export-aspect">
+                <option value="16:9" selected>16:9</option>
+                <option value="1:1">1:1</option>
+                <option value="9:16">9:16</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Quality</span>
+              <select id="export-quality">
+                <option value="720p">720p</option>
+                <option value="1080p" selected>1080p</option>
+                <option value="4k">4K</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Format</span>
+              <select id="export-format">
+                <option value="mp4" selected>MP4</option>
+                <option value="png-sequence">PNG frames</option>
+              </select>
+            </label>
+          </div>
+          <div class="tool-row">
+            <button type="button" id="export-clip">Export clip</button>
+            <button type="button" id="export-still">PNG still</button>
+          </div>
+        </div>
+
         <label class="progress">
           <span>Progress</span>
           <input
