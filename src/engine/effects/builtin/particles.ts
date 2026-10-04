@@ -7,7 +7,7 @@ export const dust = defineEffect({
   description: "The picture turns to dust, drifts, and settles as the next one.",
   family: "particles",
   durationSeconds: 2.4,
-  particles: { renderer: "points", motion: { expand: 0.45, turbulence: 0.55, settle: 0.25 } },
+  particles: { renderer: "points", size: 0.5, motion: { expand: 0.35, turbulence: 0.7, settle: 0.25 } },
 });
 
 export const magnetic = defineEffect({
@@ -16,7 +16,7 @@ export const magnetic = defineEffect({
   description: "Filings swirl inward and snap into the next shape like iron to a magnet.",
   family: "particles",
   durationSeconds: 2.2,
-  particles: { renderer: "shards", motion: { implode: 0.55, orbit: 0.5, settle: 0.3 } },
+  particles: { renderer: "shards", size: 0.6, motion: { implode: 0.55, orbit: 0.5, settle: 0.3 } },
 });
 
 export const gooey = defineEffect({
@@ -27,6 +27,7 @@ export const gooey = defineEffect({
   durationSeconds: 2.4,
   particles: {
     renderer: "points",
+    size: 0.8,
     motion: { settle: 0.6, turbulence: 0.35 },
     style: { id: "goo", cell: 6 },
   },

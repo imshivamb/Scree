@@ -38,6 +38,8 @@ export type PieceMotion = {
    * 0 = every piece moves the same; 1 = pieces that stay put barely stir.
    */
   focus?: number;
+  /** 0–1: glassy glint on pieces as they turn in flight (helps dark pieces read). */
+  gloss?: number;
   /** Shrink at mid-flight (0 = none, 0.5 = half size). */
   dip?: number;
   /** Glitch: pieces jump sideways in steps while travelling. */
@@ -66,6 +68,8 @@ export type SurfaceEffect = {
 
 export type ParticleEffect = {
   renderer: Extract<RendererId, "points" | "sprites" | "shards">;
+  /** Point size multiplier: below 1 for fine sand, above 1 for chunky pieces. */
+  size?: number;
   motion: MotionInput;
   style?: StyleInput;
 };

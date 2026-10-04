@@ -7,6 +7,7 @@ import {
   type SnapshotOptions,
 } from "./export";
 import { getEffect, type EffectDefinition } from "./effects";
+import { RestImages } from "./rest-images";
 import {
   DEFAULT_MATCH,
   MatchCache,
@@ -160,6 +161,8 @@ export class Scree {
   );
   private stylePass: StylePass | null = null;
   private effect: EffectDefinition | null = null;
+  /** Real pictures at the ends of point effects. */
+  private readonly restImages = new RestImages();
   /** Whether `field.destination` has been paired point-to-point with the source. */
   private fieldPaired = false;
   private fit: number;
@@ -230,6 +233,7 @@ export class Scree {
       this.webgl.getPixelRatio(),
     );
     this.scene.add(this.skin.object);
+    this.scene.add(this.restImages.object);
     if (options.style) this.setStyle(options.style);
     if (options.effect) this.setEffect(options.effect);
     options.canvas.addEventListener("webglcontextlost", this.handleContextLost);
@@ -386,6 +390,7 @@ export class Scree {
     this.styleConfigs[id] = next;
     this.styleId = id;
     this.skin.setFlatOutput(id !== "none");
+    this.restImages.setFlatOutput(id !== "none");
     if (id !== "none" && !this.stylePass) {
       this.stylePass = new StylePass();
       this.syncStyleSize();
@@ -509,7 +514,7 @@ export class Scree {
     const previous = this.effect;
     this.effect = effect;
     if (effect.family === "particles" && effect.particles) {
-      this.setRenderer(effect.particles.renderer);
+      this.setRenderer(effect.particles.renderer, { size: effect.particles.size ?? 1 });
       this.setBehavior(effect.particles.motion);
       if (effect.particles.style) this.setStyle(effect.particles.style);
       else if (previous?.particles?.style) this.setStyle("none");
@@ -518,6 +523,7 @@ export class Scree {
     if (previous?.particles?.style) this.setStyle("none");
     this.setRenderer(effect.family === "pieces" ? "pieces" : "surface");
     this.skin.setEffect?.(effect);
+    this.syncSkin();
   }
 
   /** The current effect id, or null when driving renderers and motions directly. */
@@ -745,6 +751,7 @@ export class Scree {
     document.removeEventListener("visibilitychange", this.visibilityHandler);
     this.scene.remove(this.skin.object);
     this.skin.dispose();
+    this.restImages.dispose();
     this.stylePass?.dispose();
     this.webgl.dispose();
   }
@@ -768,7 +775,21 @@ export class Scree {
     this.skin.setLook(this.look);
     this.skin.setConfig(this.rendererLooks[this.skin.id]);
     this.skin.setFlatOutput(this.styleId !== "none");
+    this.restImages.setField(
+      this.field.source,
+      this.field.destination,
+      this.skin.pairsPoints && this.effect?.family === "particles",
+    );
     this.skin.setProgress(this.progress);
+    this.applyPointVisibility();
+  }
+
+  /** Points fade out where the real picture covers them at the ends of a point effect. */
+  private applyPointVisibility(): void {
+    const visible = this.restImages.setProgress(this.progress);
+    if (!this.skin.pairsPoints) return;
+    const look = this.rendererLooks[this.skin.id];
+    this.skin.setConfig({ ...look, opacity: look.opacity * visible });
   }
 
   private readonly handleContextLost = (event: Event): void => {
@@ -829,6 +850,7 @@ export class Scree {
     this.progress = clampProgress(progress);
     this.applyMotionAtProgress();
     this.updateCamera();
+    this.applyPointVisibility();
     this.skin.setProgress(this.progress);
     this.onProgress?.(this.progress);
   }

@@ -14,6 +14,7 @@ export const effect = defineEffect({
       lift: 0.55,
       arc: 0.25,
       tilt: 0.5,
+      gloss: 0.45,
       overshoot: 0.6,
       swap: [0.3, 0.7],
     },

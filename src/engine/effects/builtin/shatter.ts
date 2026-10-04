@@ -13,6 +13,7 @@ export const effect = defineEffect({
       staggerBy: "radial",
       lift: 0.5,
       focus: 0.55,
+      gloss: 0.9,
       arc: 0.3,
       tilt: 2.4,
       dip: 0.1,

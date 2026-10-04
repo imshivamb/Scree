@@ -68,6 +68,7 @@ export class PiecesRenderer implements ParticleRenderer {
         uJolt: { value: 0 },
         uOvershoot: { value: 0 },
         uFocus: { value: 0 },
+        uGloss: { value: 0 },
         uSwap: { value: new THREE.Vector2(0.35, 0.65) },
         uSrcTex: { value: null },
         uDstTex: { value: null },
@@ -136,6 +137,7 @@ export class PiecesRenderer implements ParticleRenderer {
     uniforms.uRgbSplit.value = motion.rgbSplit ?? 0;
     uniforms.uOvershoot.value = motion.overshoot ?? 0;
     uniforms.uFocus.value = motion.focus ?? 0;
+    uniforms.uGloss.value = motion.gloss ?? 0;
     const swap = motion.swap ?? [0.35, 0.65];
     uniforms.uSwap.value.set(swap[0], swap[1]);
   }

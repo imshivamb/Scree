@@ -9,6 +9,6 @@ export const effect = defineEffect({
   pieces: {
     cut: { kind: "triangles", columns: 4, rows: 3, jitter: 0 },
     match: "spatial",
-    motion: { stagger: 0.6, staggerBy: "x", lift: 0.2, arc: 0, tilt: 0, flip: "random" },
+    motion: { stagger: 0.6, staggerBy: "x", lift: 0.2, arc: 0, tilt: 0, flip: "random", gloss: 0.5 },
   },
 });

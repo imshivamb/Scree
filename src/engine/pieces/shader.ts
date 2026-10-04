@@ -113,6 +113,7 @@ uniform sampler2D uDstTex;
 uniform float uOpacity;
 uniform float uRgbSplit;
 uniform float uFlatOutput;
+uniform float uGloss;
 uniform int uFlip;
 
 varying vec2 vSrcUv;
@@ -137,9 +138,13 @@ void main() {
   vec4 color = mix(sampleSplit(uSrcTex, vSrcUv), sampleSplit(uDstTex, vDstUv), toNew);
   if (color.a < 0.01) discard;
 
-  vec3 normal = gl_FrontFacing ? vNormal : -vNormal;
-  float light = 0.8 + 0.28 * max(dot(normalize(normal), normalize(vec3(-0.35, 0.55, 0.76))), 0.0);
+  vec3 normal = normalize(gl_FrontFacing ? vNormal : -vNormal);
+  vec3 toLight = normalize(vec3(-0.35, 0.55, 0.76));
+  float light = 0.8 + 0.28 * max(dot(normal, toLight), 0.0);
   color.rgb *= mix(1.0, light, vFlight);
+  // A glint as a piece turns toward the light, so even dark pieces read in flight.
+  float glint = pow(max(dot(reflect(-toLight, normal), vec3(0.0, 0.0, 1.0)), 0.0), 18.0);
+  color.rgb = min(color.rgb + glint * uGloss * vFlight, vec3(1.0));
 
   if (uFlatOutput > 0.5) {
     gl_FragColor = vec4(color.rgb, 1.0);

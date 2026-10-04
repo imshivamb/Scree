@@ -9,6 +9,6 @@ export const effect = defineEffect({
   pieces: {
     cut: { kind: "grid", density: 160 },
     match: "spatial",
-    motion: { stagger: 0.55, staggerBy: "radial", lift: 0.12, arc: 0, tilt: 0, flip: "y" },
+    motion: { stagger: 0.55, staggerBy: "radial", lift: 0.12, arc: 0, tilt: 0, flip: "y", gloss: 0.4 },
   },
 });

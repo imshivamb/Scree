@@ -13,7 +13,8 @@ import { prepareImage } from "./images";
 import type { Look, SlotId, Template } from "./templates";
 import { matchInWorker } from "./worker-match";
 
-const PARTICLES = 128 * 128;
+/** Dense and fine, so point effects read as sand and mist rather than dots. */
+const PARTICLES = 256 * 256;
 export const STUDIO_FIT = 0.82;
 
 export type Sources = Partial<Record<SlotId, string>>;
