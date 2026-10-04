@@ -46,6 +46,30 @@ function spatialOrder(source: ParticleTarget, destination: ParticleTarget): Uint
   return order;
 }
 
+/** `order[sourceIndex] = destinationIndex` for a strategy. */
+export function matchOrder(
+  source: ParticleTarget,
+  destination: ParticleTarget,
+  strategy: MatchStrategy = DEFAULT_MATCH,
+  options: TransportOptions = {},
+): Uint32Array {
+  if (source.count !== destination.count) {
+    throw new Error("Particle targets must contain equal position counts");
+  }
+  switch (strategy) {
+    case "random":
+      return shuffledOrder(destination.count);
+    case "spatial":
+      return spatialOrder(source, destination);
+    case "transport":
+      return transportOrder(source, destination, options);
+    default: {
+      const exhaustive: never = strategy;
+      throw new Error(`Unknown match strategy "${String(exhaustive)}"`);
+    }
+  }
+}
+
 /**
  * Reorder `destination` so that index *i* is the point that source point *i*
  * should travel to. Positions, colours and normals move together.
@@ -56,21 +80,7 @@ export function matchTargets(
   strategy: MatchStrategy = DEFAULT_MATCH,
   options: TransportOptions = {},
 ): ParticleTarget {
-  if (source.count !== destination.count) {
-    throw new Error("Particle targets must contain equal position counts");
-  }
-  switch (strategy) {
-    case "random":
-      return permuteTarget(destination, shuffledOrder(destination.count));
-    case "spatial":
-      return permuteTarget(destination, spatialOrder(source, destination));
-    case "transport":
-      return permuteTarget(destination, transportOrder(source, destination, options));
-    default: {
-      const exhaustive: never = strategy;
-      throw new Error(`Unknown match strategy "${String(exhaustive)}"`);
-    }
-  }
+  return permuteTarget(destination, matchOrder(source, destination, strategy, options));
 }
 
 /** Computes a pairing somewhere else (e.g. a Web Worker) and resolves with it. */

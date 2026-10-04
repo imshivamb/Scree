@@ -152,6 +152,7 @@ export function permuteTarget(
     normals: permute3(target.normals, order),
     seeds,
     ...(groupIds ? { groupIds } : {}),
+    ...(target.image ? { image: target.image } : {}),
     count: target.count,
   };
 }

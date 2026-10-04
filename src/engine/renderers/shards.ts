@@ -84,6 +84,7 @@ function createTriangleGeometry(): THREE.InstancedBufferGeometry {
 
 export class ShardsRenderer implements ParticleRenderer {
   readonly id = "shards" as const;
+  readonly pairsPoints = true;
   readonly object: THREE.Mesh;
   private readonly geometry = createTriangleGeometry();
   private readonly material: THREE.ShaderMaterial;

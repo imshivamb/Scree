@@ -42,6 +42,7 @@ export type {
   ParticleTarget,
   ParticleTargetOptions,
   PixelSource,
+  TargetImage,
   TargetQuality,
   TextTargetOptions,
 } from "./types";

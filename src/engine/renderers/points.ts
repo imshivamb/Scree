@@ -67,6 +67,7 @@ void main() {
 
 export class PointsRenderer implements ParticleRenderer {
   readonly id = "points" as const;
+  readonly pairsPoints = true;
   readonly object: THREE.Points;
   private readonly geometry = new THREE.BufferGeometry();
   private readonly material: THREE.ShaderMaterial;

@@ -7,8 +7,8 @@ import type {
   MatchStrategy,
   PaletteId,
   StyleId,
-  TransitionPresetId,
 } from "../engine";
+import { listEffects, type EffectFamily } from "../engine";
 import { StudioController, type Sources } from "./controller";
 import { DropSlot } from "./DropSlot";
 import { imageFromTransfer } from "./images";
@@ -21,7 +21,7 @@ type Slot = { src: string; name: string; isSample: boolean };
 type Slots = Partial<Record<SlotId, Slot>>;
 
 const STYLES: { value: StyleId; label: string }[] = [
-  { value: "none", label: "Points" },
+  { value: "none", label: "Clean" },
   { value: "halftone", label: "Halftone" },
   { value: "dither", label: "Dither" },
   { value: "pixel", label: "Pixel" },
@@ -32,12 +32,10 @@ const PALETTES: { value: PaletteId; label: string }[] = [
   { value: "mono", label: "Mono" },
   { value: "duotone", label: "Duotone" },
 ];
-const MOTIONS: { value: TransitionPresetId; label: string; title: string }[] = [
-  { value: "flow", label: "Flow", title: "Pieces travel straight to their place" },
-  { value: "organic", label: "Organic", title: "A soft cloud between the forms" },
-  { value: "reassemble", label: "Gather", title: "Pull in, then settle" },
-  { value: "vortex", label: "Vortex", title: "Orbit while travelling" },
-  { value: "explode", label: "Burst", title: "Blow apart, then land" },
+const FAMILIES: { id: EffectFamily; label: string }[] = [
+  { id: "pieces", label: "Pieces" },
+  { id: "surface", label: "Surface" },
+  { id: "particles", label: "Particles" },
 ];
 const MATCHES: { value: MatchStrategy; label: string; title: string }[] = [
   { value: "transport", label: "Smart", title: "Pieces find their match by place and colour" },
@@ -98,11 +96,12 @@ const particleCount = 128 * 128;
 const engine = createScree({
   canvas: document.querySelector("canvas"),
   match: "${look.match}",
+  effect: "${look.effect}",
   style: { id: "${look.style}", palette: "${look.palette}", cell: ${look.cell} },
 });
 engine.addTarget("before", ${before});
 engine.addTarget("after", ${after});
-engine.transition({ from: "before", to: "after", motion: "${look.motion}", durationSeconds: ${look.durationSeconds} });
+engine.transition({ from: "before", to: "after", durationSeconds: ${look.durationSeconds} });
 `;
 }
 
@@ -236,7 +235,6 @@ export function App() {
           Scree
         </a>
         <nav>
-          <a href="/playground/">Playground</a>
           <a href="https://github.com/imshivamb/Scree" target="_blank" rel="noreferrer">
             GitHub
           </a>
@@ -327,7 +325,7 @@ export function App() {
         </div>
 
         <aside className="rail rail-right" aria-label="Look, motion and export">
-          <Section title="Look">
+          <Section title="Finish">
             <Segmented label="Style" value={look.style} options={STYLES} onChange={(style) => update({ style })} wrap />
             {look.style !== "none" ? (
               <>
@@ -342,8 +340,31 @@ export function App() {
             ) : null}
           </Section>
 
-          <Section title="Motion">
-            <Segmented label="Motion" value={look.motion} options={MOTIONS} onChange={(motion) => update({ motion })} wrap />
+          <Section title="Effect">
+            {FAMILIES.map((family) => (
+              <div key={family.id} className="effect-family">
+                <span className="row-label">{family.label}</span>
+                <div className="effects">
+                  {listEffects()
+                    .filter((effect) => effect.family === family.id)
+                    .map((effect) => (
+                      <button
+                        key={effect.id}
+                        type="button"
+                        className="effect"
+                        aria-pressed={effect.id === look.effect}
+                        title={effect.description}
+                        onClick={() => update({ effect: effect.id, durationSeconds: effect.durationSeconds })}
+                      >
+                        {effect.label}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            ))}
+          </Section>
+
+          <Section title="Timing">
             <Segmented label="Match" value={look.match} options={MATCHES} onChange={(match) => update({ match })} />
             <Slider
               label="Morph"

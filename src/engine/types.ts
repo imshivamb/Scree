@@ -2,7 +2,8 @@ import type { BehaviorWeights } from "./motion-field";
 import type { ParticleQuality } from "./motion";
 import type { ParticleTarget } from "./target";
 
-export type RendererId = "points" | "sprites" | "shards";
+/** Point skins (`points`, `sprites`, `shards`) plus the effect families that move real pixels. */
+export type RendererId = "points" | "sprites" | "shards" | "pieces" | "surface";
 
 export const BEHAVIOR_IDS = [
   "settle",

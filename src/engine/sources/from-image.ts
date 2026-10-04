@@ -44,12 +44,13 @@ function loadHtmlImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-function imageOptions(options: ImageTargetOptions) {
+function imageOptions(options: ImageTargetOptions, element?: TexImageSource) {
   return {
     particleCount: resolveParticleCount(options),
     seed: resolveSeed(options),
     alphaThreshold: options.alphaThreshold ?? 24,
     depth: options.depth ?? 0.22,
+    ...(element ? { element } : {}),
   };
 }
 
@@ -63,7 +64,7 @@ export async function createImageTarget(
   const image = await loadHtmlImage(src);
   return buildParticleTarget(
     pixelSourceFromImage(image, image.naturalWidth, image.naturalHeight),
-    imageOptions(options),
+    imageOptions(options, image),
   );
 }
 

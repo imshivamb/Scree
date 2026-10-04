@@ -14,6 +14,25 @@ export type {
   RecordOptions,
   SnapshotOptions,
 } from "./export";
+export {
+  BUILT_IN_EFFECT_IDS,
+  defineEffect,
+  getEffect,
+  isEffectId,
+  listEffects,
+  registerEffect,
+  registerSurfaceShader,
+} from "./effects";
+export type {
+  EffectDefinition,
+  EffectFamily,
+  PieceCut,
+  PieceEffect,
+  PieceMotion,
+  StaggerMode,
+  SurfaceEffect,
+  SurfaceShader,
+} from "./effects";
 export { DEFAULT_MATCH, isMatchStrategy, MATCH_STRATEGIES } from "./match";
 export type { MatchCompute, MatchStrategy } from "./match";
 export { matchTargets } from "./match";
@@ -79,5 +98,6 @@ export type {
   MeshTargetOptions,
   ParticleTarget,
   ProceduralTargetId,
+  TargetImage,
   TextTargetOptions,
 } from "./target";

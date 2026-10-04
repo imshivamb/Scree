@@ -64,6 +64,9 @@ export function resolveRendererSize(input: {
       return worldSizeFromPointLook(input, SPRITE_TO_POINT);
     case "shards":
       return worldSizeFromPointLook(input, SHARD_TO_POINT);
+    case "pieces":
+    case "surface":
+      return 1;
     default: {
       const exhaustive: never = input.id;
       throw new Error(`Unknown renderer "${String(exhaustive)}"`);

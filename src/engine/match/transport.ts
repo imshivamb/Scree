@@ -3,7 +3,10 @@ import type { ParticleTarget } from "../sources/types";
 import { solveAssignment } from "./hungarian";
 
 const FEATURES = 6;
-const MIN_CHUNK_POINTS = 16;
+/** Coarse runs hold at least this many points (finer runs keep small colour regions intact). */
+const MIN_CHUNK_POINTS = 4;
+/** Up to this many points the whole problem is solved exactly (one point per run). */
+const EXACT_LIMIT = 320;
 /** Runs up to this size are paired exactly; larger runs pair by place (cost grows with size³). */
 const EXACT_RUN_LIMIT = 64;
 
@@ -130,7 +133,10 @@ export function transportOrder(
     throw new Error("Particle targets must contain equal position counts");
   }
 
-  const chunks = Math.max(1, Math.min(wanted, Math.floor(count / MIN_CHUNK_POINTS)));
+  const chunks =
+    count <= EXACT_LIMIT
+      ? count
+      : Math.max(1, Math.min(wanted, Math.floor(count / MIN_CHUNK_POINTS)));
   const size = Math.floor(count / chunks);
   const sourceRank = canonicalOrder(source.positions, source.groupIds);
   const destinationRank = canonicalOrder(destination.positions, destination.groupIds);

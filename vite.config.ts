@@ -11,7 +11,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         studio: resolve(import.meta.dirname, "index.html"),
-        playground: resolve(import.meta.dirname, "playground/index.html"),
+        lab: resolve(import.meta.dirname, "lab/index.html"),
       },
     },
   },

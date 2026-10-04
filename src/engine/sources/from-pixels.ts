@@ -101,11 +101,23 @@ export function buildParticleTarget(
     seeds[index] = random();
   }
 
+  const extent = options.extent ?? 2;
+  const toWorld = extent / span;
   return finalizeTarget({
     positions,
     colors,
     seeds,
     normals: flatNormals(particleCount),
     normalize: false,
+    image: {
+      ...(options.element ? { element: options.element } : {}),
+      pixels: source,
+      rect: {
+        left: (0 - centerX) * toWorld,
+        right: (source.width - centerX) * toWorld,
+        top: centerY * toWorld,
+        bottom: (centerY - source.height) * toWorld,
+      },
+    },
   });
 }

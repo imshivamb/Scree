@@ -1,6 +1,6 @@
 import { canonicalOrder, permuteTarget } from "./order";
 import { mulberry32 } from "./rng";
-import type { ParticleTarget } from "./types";
+import type { ParticleTarget, TargetImage } from "./types";
 
 export function normalizePositions(
   positions: Float32Array,
@@ -77,6 +77,7 @@ export function finalizeTarget(input: {
   seeds?: Float32Array;
   normals?: Float32Array;
   groupIds?: Uint16Array;
+  image?: TargetImage;
   seed?: number;
   normalize?: boolean;
   maxExtent?: number;
@@ -115,6 +116,7 @@ export function finalizeTarget(input: {
     seeds,
     normals,
     ...(input.groupIds ? { groupIds: input.groupIds } : {}),
+    ...(input.image ? { image: input.image } : {}),
     count,
   };
   if (input.order === "sampled") return target;

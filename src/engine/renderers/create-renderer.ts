@@ -1,4 +1,6 @@
 import type { MorphLook, RendererConfig, RendererId } from "../types";
+import { PiecesRenderer } from "../pieces/renderer";
+import { SurfaceRenderer } from "../surface/renderer";
 import { PointsRenderer } from "./points";
 import { ShardsRenderer } from "./shards";
 import { SpritesRenderer } from "./sprites";
@@ -17,6 +19,10 @@ export function createParticleRenderer(
       return new SpritesRenderer(look, config, dpr);
     case "shards":
       return new ShardsRenderer(look, config, dpr);
+    case "pieces":
+      return new PiecesRenderer(config);
+    case "surface":
+      return new SurfaceRenderer();
     default: {
       const exhaustive: never = id;
       throw new Error(`Unknown renderer "${String(exhaustive)}"`);

@@ -2,7 +2,7 @@
  * A style is how the field is drawn on screen after the points are placed.
  * `none` draws the points as they are; the others redraw the field per cell.
  */
-export const STYLE_IDS = ["none", "dither", "halftone", "ascii", "pixel"] as const;
+export const STYLE_IDS = ["none", "dither", "halftone", "ascii", "pixel", "goo"] as const;
 export type StyleId = (typeof STYLE_IDS)[number];
 
 /** Colour source for a style: the form's own colours, one ink, or two tones. */
@@ -36,6 +36,7 @@ export const DEFAULT_STYLE_CONFIGS: Record<StyleId, StyleConfig> = {
   halftone: { ...BASE, cell: 9 },
   ascii: { ...BASE, cell: 12, palette: "mono" },
   pixel: { ...BASE, cell: 8 },
+  goo: { ...BASE, cell: 6 },
 };
 
 export const MIN_CELL = 1;

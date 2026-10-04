@@ -17,8 +17,8 @@ import {
 } from "../src/engine/renderers/instanced-field";
 
 describe("renderers", () => {
-  it("exposes the three early draw styles", () => {
-    expect(RENDERER_IDS).toEqual(["points", "sprites", "shards"]);
+  it("exposes the point skins and the pixel effect families", () => {
+    expect(RENDERER_IDS).toEqual(["points", "sprites", "shards", "pieces", "surface"]);
   });
 
   it("accepts only known renderer ids", () => {

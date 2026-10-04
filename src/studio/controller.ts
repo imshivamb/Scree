@@ -3,6 +3,7 @@ import {
   createDustTarget,
   createImageTarget,
   createScree,
+  getEffect,
   progressAtTime,
   type ExportFormat,
   type ExportQuality,
@@ -41,6 +42,9 @@ export class StudioController {
     this.engine = createScree({ canvas, fit: STUDIO_FIT, match: look.match });
     this.engine.setDriver("manual");
     this.applyLook(look);
+    if (import.meta.env.DEV) {
+      (window as unknown as { __studio?: StudioController }).__studio = this;
+    }
   }
 
   get total(): number {
@@ -107,8 +111,11 @@ export class StudioController {
 
   private applyLook(look: Look): void {
     this.engine.setMatch(look.match);
-    this.engine.setBehavior(look.motion);
-    this.engine.setStyle({ id: look.style, palette: look.palette, cell: look.cell });
+    if (this.engine.getEffect() !== look.effect) this.engine.setEffect(look.effect);
+    // Effects that bring their own finish (e.g. Gooey) keep it.
+    if (!getEffect(look.effect)?.particles?.style) {
+      this.engine.setStyle({ id: look.style, palette: look.palette, cell: look.cell });
+    }
   }
 
   resize(width: number, height: number): void {

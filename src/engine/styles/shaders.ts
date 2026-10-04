@@ -121,6 +121,24 @@ void main() {
 }
 `;
 
+const GOO = /* glsl */ `
+void main() {
+  vec2 px = vUv * uResolution;
+  // Blur by reading a coarser mip right here (no cell snapping), then threshold: metaballs.
+  vec4 s = textureLod(tScene, px / uResolution, log2(max(uCell, 1.0)));
+  float presence = s.a * uGain;
+  float body = smoothstep(0.42, 0.58, presence);
+  if (body <= 0.0) {
+    gl_FragColor = vec4(0.0);
+    return;
+  }
+  vec3 color = s.a > 1e-4 ? clamp(s.rgb / s.a, 0.0, 1.0) : vec3(0.0);
+  float sheen = 1.0 - smoothstep(0.58, 0.95, presence);
+  vec3 painted = paint(color, luma(color)) * (1.0 + sheen * 0.25);
+  gl_FragColor = vec4(painted * body, body);
+}
+`;
+
 export function styleFragment(id: Exclude<StyleId, "none">): string {
   switch (id) {
     case "dither":
@@ -131,6 +149,8 @@ export function styleFragment(id: Exclude<StyleId, "none">): string {
       return COMMON + ASCII;
     case "pixel":
       return COMMON + PIXEL;
+    case "goo":
+      return COMMON + GOO;
     default: {
       const exhaustive: never = id;
       throw new Error(`Unknown style "${String(exhaustive)}"`);

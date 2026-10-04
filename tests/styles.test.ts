@@ -14,7 +14,7 @@ import {
 
 describe("styles", () => {
   it("lists the styles and has a default config for each", () => {
-    expect(STYLE_IDS).toEqual(["none", "dither", "halftone", "ascii", "pixel"]);
+    expect(STYLE_IDS).toEqual(["none", "dither", "halftone", "ascii", "pixel", "goo"]);
     for (const id of STYLE_IDS) {
       expect(DEFAULT_STYLE_CONFIGS[id].cell).toBeGreaterThanOrEqual(1);
     }

@@ -1,5 +1,15 @@
 import type { ParticleQuality } from "../motion";
 
+/** The real picture behind an image-based target, for effects that move pixels. */
+export type TargetImage = {
+  /** Full-resolution element when available (sharper textures). */
+  element?: TexImageSource;
+  /** The sampled RGBA pixels (top row first); always present. */
+  pixels: PixelSource;
+  /** Where the whole image sits in world space (y up). */
+  rect: { left: number; right: number; bottom: number; top: number };
+};
+
 export type ParticleTarget = {
   positions: Float32Array;
   colors: Float32Array;
@@ -7,6 +17,8 @@ export type ParticleTarget = {
   normals: Float32Array;
   /** Optional part per particle (e.g. GLB sub-mesh). Parts stay contiguous. */
   groupIds?: Uint16Array;
+  /** Present for image, SVG and text targets. */
+  image?: TargetImage;
   count: number;
 };
 
@@ -31,6 +43,8 @@ export type ParticleTargetOptions = BaseTargetOptions & {
   jitter?: number;
   extent?: number;
   preferEdges?: boolean;
+  /** Full-resolution element to keep with the target for pixel effects. */
+  element?: TexImageSource;
 };
 
 export type ImageTargetOptions = BaseTargetOptions & {

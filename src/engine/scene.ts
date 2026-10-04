@@ -6,6 +6,7 @@ import {
   type RecordOptions,
   type SnapshotOptions,
 } from "./export";
+import { getEffect, type EffectDefinition } from "./effects";
 import {
   DEFAULT_MATCH,
   MatchCache,
@@ -92,6 +93,8 @@ export type ScreeOptions = {
   style?: StyleInput;
   /** How much of the view a form fills (0.1–1). The camera fits every form. Default 0.8. */
   fit?: number;
+  /** Start with a registered effect (see `listEffects()`), e.g. "pieces" or "liquid". */
+  effect?: string;
   onTransitionStateChange?: (isTransitioning: boolean) => void;
   onProgress?: (progress: number) => void;
   onError?: (message: string) => void;
@@ -141,6 +144,8 @@ export class Scree {
     points: { ...DEFAULT_RENDERER_CONFIG },
     sprites: { ...DEFAULT_RENDERER_CONFIG, opacity: SPRITE_SHARD_OPACITY },
     shards: { ...DEFAULT_RENDERER_CONFIG, opacity: SPRITE_SHARD_OPACITY },
+    pieces: { size: 1, opacity: 1 },
+    surface: { size: 1, opacity: 1 },
   };
   private skin: ParticleRenderer;
   private field: { source: ParticleTarget; destination: ParticleTarget } | null =
@@ -154,6 +159,9 @@ export class Scree {
     DEFAULT_STYLE_CONFIGS,
   );
   private stylePass: StylePass | null = null;
+  private effect: EffectDefinition | null = null;
+  /** Whether `field.destination` has been paired point-to-point with the source. */
+  private fieldPaired = false;
   private fit: number;
   /** The two forms the camera frames; it glides between them with progress. */
   private cameraShot: {
@@ -223,6 +231,7 @@ export class Scree {
     );
     this.scene.add(this.skin.object);
     if (options.style) this.setStyle(options.style);
+    if (options.effect) this.setEffect(options.effect);
     options.canvas.addEventListener("webglcontextlost", this.handleContextLost);
     document.addEventListener("visibilitychange", this.visibilityHandler);
     this.startLoop();
@@ -289,11 +298,13 @@ export class Scree {
     }
 
     const source = replaced ?? this.displayedArrangement(sourceId) ?? destination;
+    const pair = this.skin.pairsPoints;
     this.writeField(
       source,
-      this.matches.get(source, destination, options.match ?? this.match),
+      pair ? this.matches.get(source, destination, options.match ?? this.match) : destination,
       id,
     );
+    this.fieldPaired = pair;
     this.sourceScale.copy(
       this.targetScales.get(sourceId ?? id) ?? new THREE.Vector3(1, 1, 1),
     );
@@ -356,6 +367,7 @@ export class Scree {
   /** Change how points pair up; applies from the next morph. */
   setMatch(match: MatchStrategy): void {
     this.match = match;
+    this.skin.setMatch?.(match);
   }
 
   getMatch(): MatchStrategy {
@@ -470,8 +482,47 @@ export class Scree {
       this.webgl.getPixelRatio(),
     );
     this.scene.add(this.skin.object);
+    this.skin.setMatch?.(this.match);
+    if (this.effect && this.effect.family !== "particles") this.skin.setEffect?.(this.effect);
+    // A point renderer needs paired points; pixel renderers left them unpaired.
+    if (this.skin.pairsPoints && this.field && !this.fieldPaired) {
+      this.field = {
+        source: this.field.source,
+        destination: this.matches.get(this.field.source, this.field.destination, this.match),
+      };
+      this.fieldPaired = true;
+    }
     this.syncSkin();
     this.skin.setProgress(this.progress);
+  }
+
+  /**
+   * Switch to a registered effect (`listEffects()`): pieces, shatter, liquid,
+   * page peel, dust… The same targets, match, timing and export keep working.
+   */
+  setEffect(id: string): void {
+    const effect = getEffect(id);
+    if (!effect) {
+      this.onError?.(`Unknown effect "${id}"`);
+      return;
+    }
+    const previous = this.effect;
+    this.effect = effect;
+    if (effect.family === "particles" && effect.particles) {
+      this.setRenderer(effect.particles.renderer);
+      this.setBehavior(effect.particles.motion);
+      if (effect.particles.style) this.setStyle(effect.particles.style);
+      else if (previous?.particles?.style) this.setStyle("none");
+      return;
+    }
+    if (previous?.particles?.style) this.setStyle("none");
+    this.setRenderer(effect.family === "pieces" ? "pieces" : "surface");
+    this.skin.setEffect?.(effect);
+  }
+
+  /** The current effect id, or null when driving renderers and motions directly. */
+  getEffect(): string | null {
+    return this.effect?.id ?? null;
   }
 
   setProgress(progress: number): void {
@@ -650,10 +701,12 @@ export class Scree {
       this.matches.get(source, destination, strategy);
       return;
     }
-    const matched = await options.compute(source, destination, strategy);
-    if (matched.count !== destination.count) {
+    const computed = await options.compute(source, destination, strategy);
+    if (computed.count !== destination.count) {
       throw new Error("A preloaded match must keep the particle count");
     }
+    // Workers cannot carry images; the pairing only reorders points, so the picture is unchanged.
+    const matched = destination.image ? { ...computed, image: destination.image } : computed;
     this.matches.set(source, destination, strategy, matched);
   }
 

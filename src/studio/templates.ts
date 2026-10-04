@@ -3,17 +3,17 @@ import type {
   MatchStrategy,
   PaletteId,
   StyleId,
-  TransitionPresetId,
 } from "../engine";
 
 export type TemplateId = "launch" | "logo";
 export type SlotId = "before" | "after";
 
 export type Look = {
+  /** A registered effect id (`listEffects()`). */
+  effect: string;
   style: StyleId;
   palette: PaletteId;
   cell: number;
-  motion: TransitionPresetId;
   match: MatchStrategy;
   durationSeconds: number;
   holdStartSeconds: number;
@@ -51,10 +51,10 @@ export const TEMPLATES: Record<TemplateId, Template> = {
     removeBackground: false,
     depth: 0.04,
     look: {
-      style: "halftone",
+      effect: "pieces",
+      style: "none",
       palette: "source",
       cell: 6,
-      motion: "flow",
       match: "transport",
       durationSeconds: 1.8,
       holdStartSeconds: 0.6,
@@ -71,10 +71,10 @@ export const TEMPLATES: Record<TemplateId, Template> = {
     removeBackground: true,
     depth: 0.14,
     look: {
+      effect: "dust",
       style: "none",
       palette: "source",
       cell: 4,
-      motion: "organic",
       match: "transport",
       durationSeconds: 2.2,
       holdStartSeconds: 0.3,

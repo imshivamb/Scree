@@ -37,6 +37,7 @@ export type {
   ParticleTargetOptions,
   PixelSource,
   ProceduralTargetId,
+  TargetImage,
   TargetQuality,
   TextTargetOptions,
 } from "./sources";

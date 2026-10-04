@@ -84,6 +84,7 @@ function createQuadGeometry(): THREE.InstancedBufferGeometry {
 
 export class SpritesRenderer implements ParticleRenderer {
   readonly id = "sprites" as const;
+  readonly pairsPoints = true;
   readonly object: THREE.Mesh;
   private readonly geometry = createQuadGeometry();
   private readonly material: THREE.ShaderMaterial;

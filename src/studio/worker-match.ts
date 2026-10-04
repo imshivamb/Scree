@@ -24,6 +24,9 @@ export const matchInWorker: MatchCompute = (source, destination, strategy) =>
   new Promise((resolve, reject) => {
     nextId += 1;
     pending.set(nextId, { resolve, reject });
-    // Copies, not transfers: the engine keeps its own targets.
-    getWorker().postMessage({ id: nextId, source, destination, strategy });
+    // Copies, not transfers: the engine keeps its own targets. Images stay behind
+    // (DOM images cannot be sent to a worker, and matching does not need them).
+    const { image: _sourceImage, ...plainSource } = source;
+    const { image: _destinationImage, ...plainDestination } = destination;
+    getWorker().postMessage({ id: nextId, source: plainSource, destination: plainDestination, strategy });
   });
