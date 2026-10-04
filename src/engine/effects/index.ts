@@ -55,7 +55,16 @@ const BUILT_IN = [
   particles.gooey,
 ];
 
-for (const shader of [peel.shader, liquid.shader, ink.shader, lightLeak.shader, pixelSort.shader, depth.shader, lineArt.shader]) {
+for (const shader of [
+  peel.shader,
+  liquid.shader,
+  ink.shader,
+  lightLeak.shader,
+  pixelSort.shader,
+  depth.shader,
+  lineArt.shader,
+  glitch.shader,
+]) {
   registerSurfaceShader(shader);
 }
 for (const effect of BUILT_IN) registerEffect(effect);

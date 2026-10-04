@@ -91,10 +91,16 @@ void main() {
   if (uFlip > 0) {
     vec3 axis = uFlip == 1 ? vec3(1.0, 0.0, 0.0) : uFlip == 2 ? vec3(0.0, 1.0, 0.0)
       : vec3(cos(aKeysA.x * 6.2831), sin(aKeysA.x * 6.2831), 0.0);
-    // Pre-turn the destination shape so a half turn lands it the right way round.
-    vec3 landed = rotateAxis(local1, axis, PI);
-    offset = rotateAxis(mix(local0, landed, eased), axis, PI * eased);
-    normal = rotateAxis(normal, axis, PI * eased);
+    // Turn like a card: the old shape for the first half of the turn, the new
+    // shape (pre-turned so the half turn lands it the right way round) for the
+    // second. The swap happens edge-on, where it cannot be seen. Blending the
+    // two instead would squash the piece toward a line mid-turn.
+    float turn = clamp(eased, 0.0, 1.0);
+    vec3 shape = turn < 0.5 ? local0 : rotateAxis(local1, axis, PI);
+    offset = rotateAxis(shape, axis, PI * turn);
+    normal = rotateAxis(normal, axis, PI * turn);
+    // The picture changes exactly when the piece is edge-on.
+    vSwap = turn < 0.5 ? 0.0 : 1.0;
   }
   vec3 tumbleAxis = normalize(vec3(aKeysA.x - 0.5, aKeysA.y - 0.5, 0.35));
   float tumble = flight * uTilt * energy * (aKeysA.y * 2.0 - 1.0);
@@ -133,8 +139,8 @@ vec4 sampleSplit(sampler2D image, vec2 uv) {
 }
 
 void main() {
-  // Flipping pieces show the old image on the front and the new one on the back.
-  float toNew = uFlip > 0 ? (gl_FrontFacing ? 0.0 : 1.0) : vSwap;
+  // vSwap says which picture this piece shows (flips set it by how far the turn has gone).
+  float toNew = vSwap;
   vec4 color = mix(sampleSplit(uSrcTex, vSrcUv), sampleSplit(uDstTex, vDstUv), toNew);
   if (color.a < 0.01) discard;
 
