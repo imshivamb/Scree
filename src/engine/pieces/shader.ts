@@ -12,6 +12,8 @@ uniform float uDip;
 uniform float uJolt;
 uniform float uOvershoot;
 uniform float uFocus;
+uniform float uGravity;
+uniform vec4 uBounds; // left, bottom, right, top of both pictures
 uniform vec2 uSwap;
 
 attribute vec3 aDstPosition;
@@ -45,6 +47,62 @@ float staggerKey() {
   return aKeysA.y;
 }
 
+/**
+ * Landslide: a piece breaks off, falls under gravity while tumbling, lands on
+ * a scree heap at the foot of the frame, rests, then rises to its new place.
+ */
+void landslide(float local) {
+  float width = uBounds.z - uBounds.x;
+  float height = uBounds.w - uBounds.y;
+  float ground = uBounds.y - height * 0.06;
+  float footX = (uBounds.x + uBounds.z) * 0.5;
+  // Where this piece lands on the heap: a triangle slope, denser near the middle.
+  float across = (aKeysA.x - 0.5) * 2.0;
+  float pileX = mix(aSrcCenter.x, footX + across * width * 0.46, 0.7);
+  float slope = clamp(1.0 - abs(pileX - footX) / (width * 0.5), 0.0, 1.0);
+  float pileY = ground + slope * height * 0.32 * sqrt(aKeysA.y) * uGravity;
+  vec3 pile = vec3(pileX, pileY, 0.04 + aKeysA.y * 0.06);
+  float spin = (aKeysA.x - 0.5) * 7.0;
+  vec3 tumbleAxis = normalize(vec3(aKeysA.y - 0.5, aKeysA.x - 0.5, 0.6));
+
+  vec3 local0 = position - aSrcCenter;
+  vec3 local1 = aDstPosition - aDstCenter;
+  vec3 center;
+  vec3 offset;
+  float angle;
+  float swap = 0.0;
+  if (local < 0.5) {
+    // Fall: accelerate down, drift toward the heap, tumble.
+    float t = local / 0.5;
+    center = vec3(mix(aSrcCenter.x, pile.x, t), mix(aSrcCenter.y, pile.y, t * t), mix(0.0, pile.z, t));
+    // A small bounce as it lands.
+    center.y += sin(clamp((t - 0.82) / 0.18, 0.0, 1.0) * PI) * height * 0.03 * (1.0 - aKeysA.y);
+    angle = spin * t;
+    offset = local0;
+    vFlight = 0.35 + 0.65 * sin(PI * t * 0.5);
+  } else if (local < 0.6) {
+    // Rest on the heap.
+    center = pile;
+    angle = spin;
+    offset = local0;
+    vFlight = 0.35;
+  } else {
+    // Rise: lift off the heap and settle into the new picture.
+    float t = (local - 0.6) / 0.4;
+    float eased = t * t * (3.0 - 2.0 * t);
+    center = mix(pile, aDstCenter, eased);
+    center.z += sin(PI * t) * uLift;
+    angle = mix(spin, 0.0, eased);
+    offset = mix(local0, local1, eased);
+    swap = smoothstep(0.3, 0.7, t);
+    vFlight = sin(PI * t);
+  }
+  vSwap = swap;
+  offset = rotateAxis(offset, tumbleAxis, angle);
+  vNormal = rotateAxis(vec3(0.0, 0.0, 1.0), tumbleAxis, angle);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(center + offset, 1.0);
+}
+
 void main() {
   float start = staggerKey() * uStagger;
   float local = clamp((uProgress - start) / max(1.0 - uStagger, 1e-3), 0.0, 1.0);
@@ -58,6 +116,11 @@ void main() {
     vNormal = vec3(0.0, 0.0, 1.0);
     vec3 rest = local <= 0.0 ? position : aDstPosition;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(rest, 1.0);
+    return;
+  }
+
+  if (uGravity > 0.0) {
+    landslide(local);
     return;
   }
 

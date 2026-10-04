@@ -168,6 +168,7 @@ export class Scree {
   /** Whether `field.destination` has been paired point-to-point with the source. */
   private fieldPaired = false;
   private fit: number;
+  private tilt = { x: 0, y: 0 };
   /** The two forms the camera frames; it glides between them with progress. */
   private cameraShot: {
     source: ParticleTarget;
@@ -430,8 +431,19 @@ export class Scree {
       distance,
     });
     const { direction, distance: at } = blendFraming(from, to, this.progress);
-    this.camera.position.set(direction[0] * at, direction[1] * at, direction[2] * at);
+    // A small lean (pointer parallax) on top of the framing.
+    const lean = new THREE.Vector3(direction[0] + this.tilt.x, direction[1] + this.tilt.y, direction[2]).normalize();
+    this.camera.position.set(lean.x * at, lean.y * at, lean.z * at);
     this.camera.lookAt(0, 0, 0);
+  }
+
+  /**
+   * Lean the camera a little (x right, y up; about ±0.15 reads as parallax).
+   * Pieces lifted in flight separate in depth; rest frames barely move.
+   */
+  setTilt(x: number, y: number): void {
+    this.tilt = { x: Math.max(-0.5, Math.min(0.5, x)), y: Math.max(-0.5, Math.min(0.5, y)) };
+    this.updateCamera();
   }
 
   /** How much of the view a form fills (0.1–1). */

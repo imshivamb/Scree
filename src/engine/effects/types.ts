@@ -38,6 +38,8 @@ export type PieceMotion = {
    * 0 = every piece moves the same; 1 = pieces that stay put barely stir.
    */
   focus?: number;
+  /** Landslide: pieces fall under gravity onto a heap, rest, then rise into place (heap height 0–1.5). */
+  gravity?: number;
   /** 0–1: glassy glint on pieces as they turn in flight (helps dark pieces read). */
   gloss?: number;
   /** Shrink at mid-flight (0 = none, 0.5 = half size). */

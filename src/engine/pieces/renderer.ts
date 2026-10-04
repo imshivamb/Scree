@@ -69,6 +69,8 @@ export class PiecesRenderer implements ParticleRenderer {
         uOvershoot: { value: 0 },
         uFocus: { value: 0 },
         uGloss: { value: 0 },
+        uGravity: { value: 0 },
+        uBounds: { value: new THREE.Vector4(-1, -1, 1, 1) },
         uSwap: { value: new THREE.Vector2(0.35, 0.65) },
         uSrcTex: { value: null },
         uDstTex: { value: null },
@@ -119,6 +121,12 @@ export class PiecesRenderer implements ParticleRenderer {
     this.object.geometry.dispose();
     this.object.geometry = geometry;
     const uniforms = this.object.material.uniforms;
+    (uniforms.uBounds.value as THREE.Vector4).set(
+      Math.min(source.rect.left, destination.rect.left),
+      Math.min(source.rect.bottom, destination.rect.bottom),
+      Math.max(source.rect.right, destination.rect.right),
+      Math.max(source.rect.top, destination.rect.top),
+    );
     uniforms.uSrcTex.value = textureFor(source);
     uniforms.uDstTex.value = textureFor(destination);
   }
@@ -138,6 +146,7 @@ export class PiecesRenderer implements ParticleRenderer {
     uniforms.uOvershoot.value = motion.overshoot ?? 0;
     uniforms.uFocus.value = motion.focus ?? 0;
     uniforms.uGloss.value = motion.gloss ?? 0;
+    uniforms.uGravity.value = motion.gravity ?? 0;
     const swap = motion.swap ?? [0.35, 0.65];
     uniforms.uSwap.value.set(swap[0], swap[1]);
   }

@@ -25,7 +25,7 @@ npm test
 npm run dev
 ```
 
-Open the local Vite URL: that's the Studio. Pick an **Effect** (Pieces, Shatter, Page peel, Liquid, Line-art…), drop in your own images, scrub, and export. The older developer playground lives at `/lab/`. The **Target** panel is Image / Text / 3D / Shape. **Points / Sprites / Shards** change the draw. **Smart / Spatial / Random** decide how pieces pair up. **Organic / Flow / Explode / Dissolve / Vortex** mix motions. **Auto / Manual / Scroll / Pointer** write progress. **Showcase** scrolls Image → Text → 3D → Shape on the same field. **Copy code** copies a snippet you can paste next to a Scree canvas. Files stay in the browser.
+Open the local Vite URL for the site; the Studio is at `/studio/`. In the Studio, pick an **Effect** (Pieces, Shatter, Page peel, Liquid, Line-art…), drop in your own images, scrub, and export. The older developer playground lives at `/lab/`. The **Target** panel is Image / Text / 3D / Shape. **Points / Sprites / Shards** change the draw. **Smart / Spatial / Random** decide how pieces pair up. **Organic / Flow / Explode / Dissolve / Vortex** mix motions. **Auto / Manual / Scroll / Pointer** write progress. **Showcase** scrolls Image → Text → 3D → Shape on the same field. **Copy code** copies a snippet you can paste next to a Scree canvas. Files stay in the browser.
 
 ## Install
 

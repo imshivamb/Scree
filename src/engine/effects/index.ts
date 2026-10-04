@@ -5,6 +5,7 @@ import * as depth from "./builtin/depth";
 import * as glitch from "./builtin/glitch";
 import * as ink from "./builtin/ink";
 import * as lightLeak from "./builtin/light-leak";
+import * as landslide from "./builtin/landslide";
 import * as lineArt from "./builtin/line-art";
 import * as liquid from "./builtin/liquid";
 import * as mosaicFlip from "./builtin/mosaic-flip";
@@ -34,6 +35,7 @@ export type { SurfaceShader } from "../surface/registry";
 
 /** The built-in library, in gallery order. Adding an effect = one file + one line here. */
 const BUILT_IN = [
+  landslide.effect,
   pieces.effect,
   shatter.effect,
   slices.effect,

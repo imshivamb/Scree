@@ -3,20 +3,179 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Scree — every piece finds its place</title>
+    <title>Scree — Every piece finds its place</title>
     <meta
       name="description"
-      content="Turn an old screenshot into the new one, or loose pieces into your logo — every piece travels to its match. Export the clip as MP4."
+      content="Scree is an open-source WebGL engine that breaks any picture into pieces and settles every piece where it belongs in the next. Real pixels, exact frames, twenty transitions."
     />
+    <meta property="og:title" content="Scree — Every piece finds its place" />
+    <meta
+      property="og:description"
+      content="Break any picture into pieces. Every piece finds its place in the next. Open source, in the browser."
+    />
+    <meta name="theme-color" content="#0d0c0b" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@380;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/studio/main.tsx"></script>
+    <a class="skip" href="#break">Skip the intro</a>
+
+    <canvas id="stage" aria-hidden="true"></canvas>
+    <div class="debris" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <div class="loader" aria-hidden="true">
+      <span class="loader-count">000</span>
+      <span class="loader-label">Gathering pieces</span>
+    </div>
+
+    <header class="bar">
+      <a class="brand" href="/" aria-label="Scree home">
+        <span class="brand-mark" aria-hidden="true"></span>Scree
+      </a>
+      <nav aria-label="Main">
+        <a href="#library">Library</a>
+        <a href="#builders">Builders</a>
+        <a href="https://github.com/imshivamb/Scree" target="_blank" rel="noreferrer">GitHub</a>
+        <a class="bar-cta" href="/studio/">Open Studio</a>
+      </nav>
+    </header>
+
+    <aside class="route" aria-hidden="true">
+      <span class="route-label">Elevation</span>
+      <span class="route-value"><span class="route-number">2 846</span> m</span>
+      <span class="route-now">Cliff</span>
+    </aside>
+    <ol class="route-steps" aria-hidden="true">
+      <li data-step="hero"><span>Cliff</span></li>
+      <li data-step="break"><span>Break</span></li>
+      <li data-step="fall"><span>Fall</span></li>
+      <li data-step="match"><span>Match</span></li>
+      <li data-step="settle"><span>Settle</span></li>
+      <li data-step="library"><span>Library</span></li>
+      <li data-step="builders"><span>Builders</span></li>
+      <li data-step="basecamp"><span>Base camp</span></li>
+    </ol>
+
+    <main>
+      <section class="chapter hero" id="hero" data-chapter="hero">
+        <h1 class="hero-title">Every piece <em>finds its place.</em></h1>
+        <div class="hero-foot">
+          <p class="lede">
+            Scree is an open-source engine that breaks any picture into pieces — and settles every piece
+            where it belongs in the next. Real pixels. Exact frames. Right in the browser.
+          </p>
+          <span class="descend">Scroll to descend</span>
+        </div>
+      </section>
+
+      <section class="chapter" id="break" data-chapter="break" data-side="left">
+        <span class="numeral" aria-hidden="true">02</span>
+        <div class="copy">
+          <p class="kicker"><span>02</span> Break</p>
+          <h2>Every form has <em>a fault line.</em></h2>
+          <p>
+            Screens, logos, photographs, words. Scree finds the seams in any picture and cuts it into pieces
+            that remember exactly where they came from.
+          </p>
+        </div>
+      </section>
+
+      <section class="chapter" id="fall" data-chapter="fall" data-side="right">
+        <span class="numeral" aria-hidden="true">03</span>
+        <div class="copy">
+          <p class="kicker"><span>03</span> Fall</p>
+          <h2>Then gravity <em>takes it.</em></h2>
+          <p>
+            Pieces fall, tumble and heap up as scree. Twenty ways to come apart — and every one leaves from your
+            real first frame.
+          </p>
+        </div>
+      </section>
+
+      <section class="chapter" id="match" data-chapter="match" data-side="left">
+        <span class="numeral" aria-hidden="true">04</span>
+        <div class="copy">
+          <p class="kicker"><span>04</span> Match</p>
+          <h2>Nothing lands <em>at random.</em></h2>
+          <p>
+            Every stone is paired, by place and by colour, with a spot in the next picture. The eye can follow
+            the change instead of guessing at it.
+          </p>
+        </div>
+      </section>
+
+      <section class="chapter" id="settle" data-chapter="settle" data-side="right">
+        <span class="numeral" aria-hidden="true">05</span>
+        <div class="copy">
+          <p class="kicker"><span>05</span> Settle</p>
+          <h2>Not a cut. <em>Not a fade.</em></h2>
+          <p>One continuous movement from what was to what is — exact on the first frame, exact on the last.</p>
+        </div>
+      </section>
+
+      <section class="chapter library" id="library" data-chapter="library">
+        <div class="library-head">
+          <p class="kicker"><span>06</span> The library</p>
+          <h2><span id="effect-count">Twenty</span> ways <em>to fall.</em></h2>
+          <p class="library-hint">Hover or tap a name — the stage plays it.</p>
+        </div>
+        <ol class="effects" id="effects"></ol>
+      </section>
+
+      <section class="chapter builders" id="builders" data-chapter="builders">
+        <div class="builders-grid">
+          <div>
+            <p class="kicker"><span>07</span> For builders</p>
+            <h2>Three lines <em>to a landslide.</em></h2>
+            <p>
+              Vanilla or React, one dependency (three.js). Bring any image, pick an effect, scrub it with scroll
+              or export a frame-exact MP4.
+            </p>
+            <button type="button" class="install" data-copy="npm i scree-core">
+              <span class="install-prompt">$</span> npm i scree-core <span class="install-state">Copy</span>
+            </button>
+          </div>
+          <pre class="code" aria-label="Example code"><code><span class="c-k">import</span> { createScree, createImageTarget } <span class="c-k">from</span> <span class="c-s">"scree-core"</span>;
+
+<span class="c-k">const</span> scree = createScree({ canvas, effect: <span class="c-s">"shatter"</span> });
+scree.addTarget(<span class="c-s">"before"</span>, <span class="c-k">await</span> createImageTarget(<span class="c-s">"/v1.png"</span>));
+scree.addTarget(<span class="c-s">"after"</span>, <span class="c-k">await</span> createImageTarget(<span class="c-s">"/v2.png"</span>));
+
+scree.transition({ from: <span class="c-s">"before"</span>, to: <span class="c-s">"after"</span> });
+<span class="c-c">// or: scroll-drive it, or scree.record() an MP4</span></code></pre>
+        </div>
+        <dl class="stats">
+          <div><dt>Transitions</dt><dd id="stat-effects">19</dd></div>
+          <div><dt>Gzipped</dt><dd>36<small>KB</small></dd></div>
+          <div><dt>Runtime deps</dt><dd>1</dd></div>
+          <div><dt>Frames</dt><dd>Exact</dd></div>
+        </dl>
+        <div class="ticker" aria-hidden="true"><div class="ticker-track" id="ticker"></div></div>
+      </section>
+
+      <section class="chapter basecamp" id="basecamp" data-chapter="basecamp">
+        <div class="basecamp-copy">
+          <p class="basecamp-title">Make something <em>fall into place.</em></p>
+          <div class="actions">
+            <a class="button button-primary" href="/studio/">Open the Studio</a>
+            <a class="button" href="https://github.com/imshivamb/Scree" target="_blank" rel="noreferrer">Star on GitHub</a>
+          </div>
+        </div>
+        <footer class="foot">
+          <span>Scree · open source, MIT</span>
+          <span>Made by <a href="https://github.com/imshivamb" target="_blank" rel="noreferrer">Shivam</a></span>
+          <span>0 m · base camp</span>
+        </footer>
+      </section>
+    </main>
+
+    <div class="cursor" aria-hidden="true"><span class="cursor-label"></span></div>
+
+    <script type="module" src="/src/site/main.ts"></script>
   </body>
 </html>

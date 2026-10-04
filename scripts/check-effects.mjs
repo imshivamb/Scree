@@ -2,7 +2,7 @@
 // exact destination picture: at rest, all effects must render the same frame.
 //
 //   npm run dev            (in another terminal)
-//   npm run check:effects  [-- --url http://localhost:5173/ --chrome "path/to/chrome"]
+//   npm run check:effects  [-- --url http://localhost:5173/studio/ --chrome "path/to/chrome"]
 //
 // Uses your local Chrome over the DevTools protocol; no extra dependencies.
 import { spawn } from "node:child_process";
@@ -16,7 +16,7 @@ const args = Object.fromEntries(
     return pairs;
   }, []),
 );
-const URL_TO_OPEN = args.url ?? "http://localhost:5173/";
+const URL_TO_OPEN = args.url ?? "http://localhost:5173/studio/";
 const CHROME =
   args.chrome ??
   process.env.CHROME_PATH ??
