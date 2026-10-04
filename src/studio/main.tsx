@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/react";
 import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
@@ -7,4 +8,9 @@ const root = document.getElementById("root");
 if (!root) throw new Error("Studio root not found");
 
 // No StrictMode: it would mount the WebGL engine twice on one canvas in development.
-createRoot(root).render(<App />);
+createRoot(root).render(
+  <>
+    <App />
+    <Analytics />
+  </>,
+);

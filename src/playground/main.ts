@@ -28,7 +28,11 @@ import {
 } from "../engine/motion";
 import { isTransitionPresetId } from "../engine/transitions";
 
+import { inject } from "@vercel/analytics";
+
 import "./styles.css";
+
+inject();
 
 const IMAGE_PRESETS = [
   { id: "mark", src: "/presets/mark.svg" },

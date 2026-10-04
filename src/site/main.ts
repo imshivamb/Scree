@@ -17,7 +17,11 @@ import {
   wordmarkArt,
 } from "./art";
 import { startCursor } from "./cursor";
+import { inject } from "@vercel/analytics";
+
 import "./site.css";
+
+inject();
 
 const PARTICLES = 128 * 128;
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
