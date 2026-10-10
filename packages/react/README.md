@@ -79,3 +79,23 @@ const { ref, run } = useSceneTransition({ effect: "pieces" });
 ```
 
 The element is captured before and after the change, the pieces travel, and the live page is handed back. Mark elements with `data-scree="name"` in both states and they travel as one block. Reduced motion applies the change at once.
+
+## Route changes (Next.js App Router)
+
+```tsx
+"use client";
+import { usePathname, useRouter } from "next/navigation";
+import { ScreeStage, useScreeStage } from "scree-react";
+
+export function Shell({ children }) {
+  return <ScreeStage routeKey={usePathname()} effect="pieces">{children}</ScreeStage>;
+}
+
+function Nav() {
+  const router = useRouter();
+  const { go } = useScreeStage();
+  return <a href="/orders" onClick={(e) => { e.preventDefault(); go(() => router.push("/orders")); }}>Orders</a>;
+}
+```
+
+The page freezes, the route renders, and its pieces travel in; what did not change stays still. If a route takes longer than `timeoutMs` (2 s) it is shown without a transition. Back/forward navigate normally. A complete example is in [`examples/next`](../../examples/next).

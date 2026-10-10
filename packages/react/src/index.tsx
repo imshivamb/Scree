@@ -1,8 +1,13 @@
 import {
+  createContext,
+  useContext,
   useEffect,
+  useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
+  type ReactNode,
   type RefObject,
 } from "react";
 import { flushSync } from "react-dom";
@@ -347,4 +352,84 @@ export function useSceneTransition<T extends HTMLElement = HTMLDivElement>(defau
     }
   };
   return { ref, run };
+}
+
+type StageContext = {
+  /**
+   * Play a navigation as a transition: the page freezes, `navigate` runs, and once
+   * the new route has rendered (the stage's `routeKey` changes) its pieces travel in.
+   */
+  go: (navigate: () => void, options?: SceneTransitionOptions) => Promise<void>;
+};
+
+const Stage = createContext<StageContext | null>(null);
+
+export type ScreeStageProps = SceneTransitionOptions & {
+  /** Changes when the route has rendered, e.g. `usePathname()` in Next.js. */
+  routeKey: string;
+  /** How long to wait for a route before showing it without a transition. Default 2000 ms. */
+  timeoutMs?: number;
+  children: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+};
+
+/**
+ * Route changes as Scree transitions. Wrap the part of the layout that changes
+ * between pages, give it the current route as `routeKey`, and navigate with
+ * `useScreeStage().go(() => router.push(href))`. Navigations made any other way
+ * (the back button, a plain link) still work; they just are not animated.
+ */
+export function ScreeStage({ routeKey, timeoutMs = 2000, children, className, style, ...defaults }: ScreeStageProps) {
+  const { ref, run } = useSceneTransition<HTMLDivElement>(defaults);
+  const arrived = useRef<(() => void) | null>(null);
+
+  // The new route is in the DOM: let the transition capture it.
+  useLayoutEffect(() => {
+    arrived.current?.();
+    arrived.current = null;
+  }, [routeKey]);
+
+  const value = useMemo<StageContext>(
+    () => ({
+      go: (navigate, options) =>
+        run(
+          () =>
+            new Promise<void>((resolve) => {
+              const timer = setTimeout(() => {
+                arrived.current = null;
+                resolve();
+              }, timeoutMs);
+              arrived.current = () => {
+                clearTimeout(timer);
+                resolve();
+              };
+              navigate();
+            }),
+          options,
+        ),
+    }),
+    // `run` reads the latest options itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [timeoutMs],
+  );
+
+  return (
+    <Stage.Provider value={value}>
+      <div ref={ref} className={className} style={style}>
+        {children}
+      </div>
+    </Stage.Provider>
+  );
+}
+
+/** `go(navigate)` inside a `ScreeStage`; outside one, `go` simply navigates. */
+export function useScreeStage(): StageContext {
+  return (
+    useContext(Stage) ?? {
+      go: async (navigate) => {
+        navigate();
+      },
+    }
+  );
 }

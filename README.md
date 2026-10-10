@@ -86,6 +86,8 @@ Live demo: [/interfaces](https://scree-tau.vercel.app/interfaces/). The overlay 
 
 Mark elements that should travel as one block with `data-scree="name"` in both states: `<div data-scree="revenue">` on the dashboard flies to the `revenue` card on the next screen. Reduced motion applies the change at once. Not captured: video frames, iframes and cross-origin images without CORS.
 
+For route changes in Next.js, wrap the layout in `<ScreeStage routeKey={usePathname()}>` and navigate with `useScreeStage().go(() => router.push(href))`; see [`examples/next`](examples/next).
+
 ```tsx
 const { ref, run } = useSceneTransition(); // scree-react
 <div ref={ref}>{tab}</div>;
@@ -251,6 +253,7 @@ Reduced motion is respected by default: transitions jump to the final picture.
 | Path | What it is |
 |---|---|
 | `src/engine` | The `scree-core` library |
+| `examples/next` | A Next.js App Router app whose route changes are Scree transitions |
 | `interfaces/index.html`, `src/interfaces` | The live-interface demo at `/interfaces/` (built with `scree-react`) |
 | `index.html`, `src/site` | The website at `/` — one scroll-driven Scree transition with artwork generated in code |
 | `studio/index.html`, `src/studio` | The Studio at `/studio/` — templates, your own images, every effect, export |
