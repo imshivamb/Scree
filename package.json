@@ -1,6 +1,6 @@
 {
   "name": "scree-core",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "description": "Every piece finds its place. A WebGL engine that breaks any picture into pieces and settles every piece where it belongs in the next — twenty transitions, real pixels, exact MP4 export.",
   "keywords": [

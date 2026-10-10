@@ -69,6 +69,27 @@ window.addEventListener("scroll", () => {
 <ScreeSequence images={pictures} progress={scroll * (pictures.length - 1)} effect="shatter" />
 ```
 
+### Transition a real interface
+
+Scree can play any effect on live DOM: a route change, a tab switch, an empty-to-full state. It captures the element before and after your change, lays a canvas over it while the pieces travel, then hands the live page back, so focus, scroll and state are untouched.
+
+```ts
+import { transitionDom } from "scree-core";
+
+await transitionDom(document.querySelector("#panel")!, {
+  effect: "pieces",
+  update: () => showSettings(), // make your change here (state, navigation, classes)
+});
+```
+
+Mark elements that should travel as one block with `data-scree="name"` in both states: `<div data-scree="revenue">` on the dashboard flies to the `revenue` card on the next screen. Reduced motion applies the change at once. Not captured: video frames, iframes and cross-origin images without CORS.
+
+```tsx
+const { ref, run } = useSceneTransition(); // scree-react
+<div ref={ref}>{tab}</div>;
+run(() => setTab("settings"), { effect: "shatter" });
+```
+
 ## Effects
 
 ```ts
@@ -244,6 +265,7 @@ npm run check:effects  # with the dev server running: exact first/last frames fo
 
 ### Changelog
 
+- **0.3.0** — Interfaces: `transitionDom(element, { update })` plays any effect on live DOM; `data-scree` groups travel as one block; `snapshotElement` / `createElementTarget` turn DOM into a Scree state.
 - **0.2.1** — `warm(from, to)`: cut the pieces and upload the pictures ahead of time, so crossing into the next pair of a scroll story costs about 4 ms instead of about 80 ms.
 - **0.2.0** — Twenty effects in three families (pieces, surface, particles) on a pluggable effect registry. Transitions move real pixels and rest exactly on the first and last picture. New: Landslide, place-and-colour matching, styles (dither, halftone, ASCII, pixel, goo), frame-exact MP4 / PNG export, a fit-to-content camera with `setTilt`, the Studio, and the new website.
 - **0.1.0** — The first particle morph engine.

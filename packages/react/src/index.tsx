@@ -10,6 +10,8 @@ import {
   createImageTarget,
   createScree,
   getEffect,
+  transitionDom,
+  type DomTransitionOptions,
   type MatchStrategy,
   type Scree,
   type StyleInput,
@@ -300,4 +302,35 @@ export function useScrollProgress(ref: RefObject<HTMLElement | null>): number {
     };
   }, [ref]);
   return value;
+}
+
+export type SceneTransitionOptions = Omit<DomTransitionOptions, "update">;
+
+/**
+ * Play a change to part of the page as a Scree transition. Attach `ref` to the
+ * element that changes, then call `run(update)` where `update` makes the change
+ * (set state, navigate). The element is captured before and after, the pieces
+ * travel, and the live page is handed back. Elements marked `data-scree="name"`
+ * in both states travel as one block. Without `await`, `run` still plays; with
+ * reduced motion it only applies the change.
+ */
+export function useSceneTransition<T extends HTMLElement = HTMLDivElement>(defaults: SceneTransitionOptions = {}) {
+  const ref = useRef<T>(null);
+  const running = useRef(false);
+  const base = useRef(defaults);
+  base.current = defaults;
+  const run = async (update: () => void | Promise<void>, options: SceneTransitionOptions = {}) => {
+    const element = ref.current;
+    if (!element || running.current) {
+      await update();
+      return;
+    }
+    running.current = true;
+    try {
+      await transitionDom(element, { ...base.current, ...options, update });
+    } finally {
+      running.current = false;
+    }
+  };
+  return { ref, run };
 }

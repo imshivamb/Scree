@@ -66,3 +66,16 @@ The canvas fills its parent; size it with CSS (`className` / `style`).
 - Peer dependencies: `react` ≥ 18 and `scree-core` ≥ 0.2.1 (which brings `three`).
 
 MIT.
+
+## useSceneTransition
+
+Play a change to part of your UI as a transition.
+
+```tsx
+const { ref, run } = useSceneTransition({ effect: "pieces" });
+
+<div ref={ref}>{tab === "a" ? <Dashboard /> : <Settings />}</div>
+<button onClick={() => run(() => setTab("b"))}>Settings</button>
+```
+
+The element is captured before and after the change, the pieces travel, and the live page is handed back. Mark elements with `data-scree="name"` in both states and they travel as one block. Reduced motion applies the change at once.
