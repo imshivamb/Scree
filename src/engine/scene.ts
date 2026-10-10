@@ -7,6 +7,7 @@ import {
   type SnapshotOptions,
 } from "./export";
 import { getEffect, type EffectDefinition } from "./effects";
+import { textureFor } from "./pieces/textures";
 import { RestImages } from "./rest-images";
 import {
   DEFAULT_MATCH,
@@ -727,6 +728,23 @@ export class Scree {
     // Workers cannot carry images; the pairing only reorders points, so the picture is unchanged.
     const matched = destination.image ? { ...computed, image: destination.image } : computed;
     this.matches.set(source, destination, strategy, matched);
+  }
+
+  /**
+   * Get `from → to` ready to show: cut the pieces and put the pictures on the
+   * GPU now, so switching to the pair later does not stall a frame. Call it
+   * for the pairs a scroll story will reach next, between frames. A no-op for
+   * point effects (use `preloadMatch` for those).
+   */
+  warm(from: string, to: string): void {
+    if (this.disposed) return;
+    const source = this.displayedArrangement(from);
+    const destination = this.targets.get(to);
+    if (!source || !destination) {
+      throw new Error(`Unknown morph target "${source ? to : from}"`);
+    }
+    const images = this.skin.warm?.({ source, destination }) ?? [];
+    for (const image of images) this.webgl.initTexture(textureFor(image));
   }
 
   /** Forget a target. The one on screen cannot be removed. */

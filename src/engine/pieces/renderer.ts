@@ -103,6 +103,14 @@ export class PiecesRenderer implements ParticleRenderer {
     if (!this.effect.match && this.field) this.setField(this.field);
   }
 
+  warm(field: ParticleFieldBuffers): TargetImage[] {
+    const source = imageForTarget(field.source);
+    const destination = imageForTarget(field.destination);
+    if (!source || !destination) return [];
+    cachedPieces(source, destination, this.effect, this.effect.match ?? this.match);
+    return [source, destination];
+  }
+
   setField(field: ParticleFieldBuffers): void {
     this.field = field;
     const source = imageForTarget(field.source);

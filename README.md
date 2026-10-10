@@ -211,6 +211,7 @@ scree.setTilt(0.1, -0.05); // lean the camera: pieces in flight separate in dept
 | `addTarget(id, target)` / `removeTarget(id)` | Register or forget a picture |
 | `transition({ from, to, durationSeconds })` | Play a transition |
 | `prepareTransition(from, to)` + `setProgress(t)` | Scrub it yourself (after `setDriver("manual")`) |
+| `warm(from, to)` / `preloadMatch(from, to)` | Get a pair ready ahead of time so scrolling into it never stalls: `warm` for piece and surface effects, `preloadMatch` for point effects |
 | `setEffect(id)` / `getEffect()` | Choose the transition |
 | `setMatch()` / `setStyle()` / `setFit()` / `setTilt()` | Pairing, finish, framing, parallax |
 | `record(options)` / `snapshot(options)` | MP4, PNG sequence, PNG |
@@ -243,6 +244,7 @@ npm run check:effects  # with the dev server running: exact first/last frames fo
 
 ### Changelog
 
+- **0.2.1** — `warm(from, to)`: cut the pieces and upload the pictures ahead of time, so crossing into the next pair of a scroll story costs about 4 ms instead of about 80 ms.
 - **0.2.0** — Twenty effects in three families (pieces, surface, particles) on a pluggable effect registry. Transitions move real pixels and rest exactly on the first and last picture. New: Landslide, place-and-colour matching, styles (dither, halftone, ASCII, pixel, goo), frame-exact MP4 / PNG export, a fit-to-content camera with `setTilt`, the Studio, and the new website.
 - **0.1.0** — The first particle morph engine.
 

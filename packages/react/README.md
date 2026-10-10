@@ -63,6 +63,6 @@ The canvas fills its parent; size it with CSS (`className` / `style`).
 - **SSR-safe.** Nothing touches WebGL until the component mounts in the browser, so it works in Next.js (put it in a client component: `"use client"`).
 - **Reduced motion.** With `prefers-reduced-motion`, the sequence jumps between pictures instead of travelling.
 - **Pictures** must be loadable by canvas: same origin, or served with CORS headers.
-- Peer dependencies: `react` ≥ 18 and `scree-core` ≥ 0.2.0 (which brings `three`).
+- Peer dependencies: `react` ≥ 18 and `scree-core` ≥ 0.2.1 (which brings `three`).
 
 MIT.

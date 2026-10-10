@@ -22,9 +22,11 @@ function Story() {
           <ScreeSequence
             images={images}
             progress={progress}
-            effect="shatter"
+            effect={new URLSearchParams(location.search).get("effect") ?? "shatter"}
             label="Four pictures that break apart and re-form as you scroll"
-            onReady={() => ((window as unknown as { __ready?: boolean }).__ready = true)}
+            onReady={(engine) => {
+              Object.assign(window, { __ready: true, __engine: engine });
+            }}
           />
         ) : null}
       </div>

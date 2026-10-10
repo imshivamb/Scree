@@ -1,9 +1,16 @@
 {
   "name": "scree-react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "React components for Scree: every piece finds its place. A transition component, a multi-image sequence and a scroll hook.",
-  "keywords": ["react", "webgl", "transition", "scroll", "image-transition", "scree"],
+  "keywords": [
+    "react",
+    "webgl",
+    "transition",
+    "scroll",
+    "image-transition",
+    "scree"
+  ],
   "license": "MIT",
   "homepage": "https://scree-tau.vercel.app",
   "repository": {
@@ -20,10 +27,13 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "sideEffects": false,
   "peerDependencies": {
     "react": ">=18",
-    "scree-core": ">=0.2.0"
+    "scree-core": ">=0.2.1"
   }
 }

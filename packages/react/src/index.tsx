@@ -9,6 +9,7 @@ import {
   createDustTarget,
   createImageTarget,
   createScree,
+  getEffect,
   type MatchStrategy,
   type Scree,
   type StyleInput,
@@ -44,6 +45,13 @@ export type ScreeSequenceProps = {
 const DEFAULT_PARTICLES = 128 * 128;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
+/** Wait for a quiet moment, so preparing a pair never lands in the middle of a frame. */
+const idle = (): Promise<void> =>
+  new Promise((resolve) => {
+    if (typeof requestIdleCallback === "function") requestIdleCallback(() => resolve(), { timeout: 300 });
+    else setTimeout(resolve, 16);
+  });
+
 /**
  * A canvas that moves through a list of pictures, each piece travelling to
  * its place in the next. Drive it with `progress` (a number you own, or
@@ -76,6 +84,39 @@ export function ScreeSequence(props: ScreeSequenceProps) {
   const callbacks = useRef({ onReady, onError });
   callbacks.current = { onReady, onError };
   const [ready, setReady] = useState(0);
+  const preparing = useRef(0);
+
+  /**
+   * Get every pair ready before the scroll reaches it, one at a time with a
+   * breath between, nearest pair first. Piece and surface effects need their
+   * pieces cut and pictures uploaded; point effects need their pairing.
+   * A newer call cancels an older one.
+   */
+  const prepare = async () => {
+    const engine = engineRef.current;
+    const ids = idsRef.current;
+    if (!engine || ids.length < 2) return;
+    const run = (preparing.current += 1);
+    const particles = getEffect(engine.getEffect() ?? "")?.family === "particles";
+    const here = Math.max(0, pairRef.current);
+    const order = Array.from({ length: ids.length - 1 }, (_, index) => index).sort(
+      (a, b) => Math.abs(a - here) - Math.abs(b - here),
+    );
+    try {
+      for (const index of order) {
+        if (run !== preparing.current || engineRef.current !== engine) return;
+        const from = ids[index] as string;
+        const to = ids[index + 1] as string;
+        if (particles) await engine.preloadMatch(from, to, { match: latest.current.match });
+        else engine.warm(from, to);
+        await idle();
+      }
+    } catch (error) {
+      if (run === preparing.current) {
+        callbacks.current.onError?.(error instanceof Error ? error.message : "Could not prepare the pictures.");
+      }
+    }
+  };
 
   const show = () => {
     const engine = engineRef.current;
@@ -120,10 +161,23 @@ export function ScreeSequence(props: ScreeSequenceProps) {
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(canvas);
+
+    // Nothing is drawn while the stage is off screen or the tab is hidden.
+    let visible = true;
+    const sync = () => engine.setPaused(document.hidden || !visible);
+    const watcher = new IntersectionObserver((entries) => {
+      visible = entries[entries.length - 1]?.isIntersecting ?? true;
+      sync();
+    });
+    watcher.observe(canvas);
+    document.addEventListener("visibilitychange", sync);
     setReady((n) => n + 1);
 
     return () => {
       observer.disconnect();
+      watcher.disconnect();
+      document.removeEventListener("visibilitychange", sync);
+      preparing.current += 1;
       engine.dispose();
       engineRef.current = null;
       idsRef.current = [];
@@ -142,6 +196,8 @@ export function ScreeSequence(props: ScreeSequenceProps) {
     engine.setFit(fit);
     pairRef.current = -1;
     show();
+    // A new effect cuts its pieces differently: warm every pair again.
+    void prepare();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effect, match, look, fit, ready]);
 
@@ -171,13 +227,7 @@ export function ScreeSequence(props: ScreeSequenceProps) {
         show();
         for (const id of previous) engine.removeTarget(id);
         callbacks.current.onReady?.(engine);
-        for (let index = 0; index < ids.length - 1 && !cancelled; index += 1) {
-          await engine.preloadMatch(ids[index] as string, ids[index + 1] as string, {
-            match: latest.current.match,
-          });
-          // Let a frame through between pairs so scrolling never stalls.
-          await new Promise((resolve) => setTimeout(resolve, 0));
-        }
+        await prepare();
       } catch (error) {
         if (!cancelled) {
           callbacks.current.onError?.(error instanceof Error ? error.message : "Could not load a picture.");

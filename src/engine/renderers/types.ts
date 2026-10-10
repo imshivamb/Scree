@@ -3,7 +3,7 @@ import type { Object3D, Vector3 } from "three";
 import type { EffectDefinition } from "../effects/types";
 import type { MatchStrategy } from "../match";
 import type { MorphLook, RendererConfig, RendererId } from "../types";
-import type { ParticleTarget } from "../target";
+import type { ParticleTarget, TargetImage } from "../target";
 
 export type ParticleFieldBuffers = {
   source: ParticleTarget;
@@ -20,6 +20,11 @@ export interface ParticleRenderer {
   /** How pieces pair up when the effect does not lock it. */
   setMatch?(strategy: MatchStrategy): void;
   setField(field: ParticleFieldBuffers): void;
+  /**
+   * Do the expensive work for `field` ahead of time (piece layouts, textures)
+   * so showing it later costs nothing. Returns the pictures to upload to the GPU.
+   */
+  warm?(field: ParticleFieldBuffers): TargetImage[];
   setProgress(progress: number): void;
   setTime(time: number): void;
   setLook(look: MorphLook): void;

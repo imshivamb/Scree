@@ -5,7 +5,7 @@ import { BUILT_IN_EFFECT_IDS, defineEffect, getEffect, listEffects } from "../sr
 import { buildPieces } from "../src/engine/pieces/build";
 import { cutUnitSquare } from "../src/engine/pieces/cut";
 import { getSurfaceShader } from "../src/engine/surface/registry";
-import type { TargetImage } from "../src/engine/target";
+import type { ParticleTarget, TargetImage } from "../src/engine/target";
 
 /** Signed area of every triangle in a cut; an exact tiling covers the unit square once. */
 function coveredArea(uv: Float32Array): number {
@@ -50,6 +50,33 @@ describe("effect registry", () => {
     expect(publicApi).toHaveProperty("listEffects");
     expect(publicApi).toHaveProperty("registerEffect");
     expect(publicApi).not.toHaveProperty("PiecesRenderer");
+  });
+});
+
+describe("warming a pair", () => {
+  const target = (picture: TargetImage) =>
+    ({ count: 0, image: picture, positions: new Float32Array(0), colors: new Float32Array(0) }) as unknown as ParticleTarget;
+
+  it("cuts the pieces ahead of time, so showing the pair reuses them", async () => {
+    const { PiecesRenderer } = await import("../src/engine/pieces/renderer");
+    const first = image(32, 20, (x) => (x < 16 ? [200, 40, 40] : [40, 40, 200]));
+    const second = image(32, 20, (x) => (x < 16 ? [40, 40, 200] : [200, 40, 40]));
+    const field = { source: target(first), destination: target(second) };
+
+    const warmed = new PiecesRenderer({ size: 1, opacity: 1 });
+    expect(warmed.warm(field)).toEqual([first, second]);
+    warmed.setField(field);
+
+    // A second renderer asking for the same pair gets the very same cut, not a new one.
+    const other = new PiecesRenderer({ size: 1, opacity: 1 });
+    other.setField(field);
+    expect(other.object.geometry.getAttribute("position").array).toBe(
+      warmed.object.geometry.getAttribute("position").array,
+    );
+  });
+
+  it("is public on the engine", () => {
+    expect(typeof publicApi.Scree.prototype.warm).toBe("function");
   });
 });
 
