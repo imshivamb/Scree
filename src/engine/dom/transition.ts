@@ -361,7 +361,14 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
     return;
   }
 
-  const shared = overlayEngine();
+  let shared: ReturnType<typeof overlayEngine>;
+  try {
+    shared = overlayEngine();
+  } catch {
+    // No WebGL here: the change is made, so just show it.
+    reveal();
+    return;
+  }
   const { canvas, surface, engine } = shared;
   shared.runs += 1;
   const ids = [`scree-dom-${shared.runs}-from`, `scree-dom-${shared.runs}-to`] as const;

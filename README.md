@@ -8,7 +8,7 @@ Scree is an open-source WebGL engine that breaks any picture into pieces and set
 - **Pieces that know where to go.** Pieces are paired by place and colour, so the button travels to where the button went.
 - **Twenty transitions.** Landslide, Shatter, Page peel, Liquid, Ink bleed, Light leak, Pixel sort, Line-art… and you can register your own.
 - **Exact export.** Render a frame-perfect MP4 or a transparent PNG sequence straight from the browser.
-- **Small.** One runtime dependency (three.js), about 39 KB gzipped.
+- **Small.** One runtime dependency (three.js), about 46 KB gzipped.
 
 **Live:** [scree-tau.vercel.app](https://scree-tau.vercel.app) — the site is itself one long Scree transition. The no-code **Studio** is at [/studio](https://scree-tau.vercel.app/studio/).
 
