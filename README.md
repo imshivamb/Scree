@@ -272,8 +272,7 @@ npm run check:effects  # with the dev server running: exact first/last frames fo
 
 ### Changelog
 
-- **0.3.0** — Interfaces: `transitionDom(element, { update })` plays any effect on live DOM; `data-scree` groups travel as one block; `snapshotElement` / `createElementTarget` turn DOM into a Scree state.
-- **0.2.1** — `warm(from, to)`: cut the pieces and upload the pictures ahead of time, so crossing into the next pair of a scroll story costs about 4 ms instead of about 80 ms.
+- **0.3.0** — Interfaces. `transitionDom(element, { update })` plays any effect on live DOM and hands the page back pixel for pixel; `data-scree` groups travel as one block and what did not change stays still; quick changes are never dropped (a new one hurries the playing one); elements that change size or scroll are placed at their true size; only the visible part is captured (about 170 ms for 1,500 elements); `primeDom`, `snapshotElement`, `createElementTarget`. Also `warm(from, to)` for scroll stories (crossing into the next pair: about 4 ms instead of 80 ms) and `framing: "picture"`.
 - **0.2.0** — Twenty effects in three families (pieces, surface, particles) on a pluggable effect registry. Transitions move real pixels and rest exactly on the first and last picture. New: Landslide, place-and-colour matching, styles (dither, halftone, ASCII, pixel, goo), frame-exact MP4 / PNG export, a fit-to-content camera with `setTilt`, the Studio, and the new website.
 - **0.1.0** — The first particle morph engine.
 
