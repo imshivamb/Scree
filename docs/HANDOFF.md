@@ -102,14 +102,21 @@ Everything new is a **plug**, never an engine rewrite.
 
 ## 7. Where things stand
 
-**Done (0.2.0):** real-pixel transitions with exact rest frames; twenty effects (Landslide, Pieces, Shatter, Slices, Blinds, Mosaic flip, Origami, Card stack, Typographic shatter, Page peel, Liquid, Ink bleed, Light leak, Pixel sort, Depth parallax, Line-art, Glitch, Dust, Magnetic pull, Gooey); styles; export; the Studio (one screen on desktop, pinned stage on mobile); the website; analytics; trusted publishing.
+**Released:** `scree-core` 0.2.0 and `scree-react` 0.1.0 (npm).
+
+**Merged on main, not yet released:** `scree-core` 0.3.0 and `scree-react` 0.2.0.
+- `warm(from, to)` and the React scroll-story smoothness pass (pair crossing 84 ms to 4 ms).
+- Interfaces (Horizon 1): `snapshotElement` / `createElementTarget` (live DOM as a state, `src/engine/sources/from-dom.ts`), group-aware piece pairing for `data-scree` regions (`src/engine/pieces/build.ts`), `transitionDom(element, { update })` (`src/engine/dom/transition.ts`), and `useSceneTransition` in `scree-react`. Try it at `/lab/dom/`.
+
+**To release:** push `main` (redeploys the site), release `scree-core` with a GitHub release tagged `v0.3.0`, then `scree-react` with `react-v0.2.0` (needs the trusted publisher added on npmjs.com for `scree-react`: GitHub Actions, `imshivamb/Scree`, `publish-react.yml`).
+
+**Known limits:** DOM capture skips video frames, iframes and cross-origin images without CORS; group pairing covers the pieces family only (particle effects ignore groups); a snapshot costs about 180 ms per screen; matching particle effects still runs on the main thread.
 
 **Next, in order:**
-1. Measure on real devices: site load time and scroll smoothness on a laptop GPU and a mid-range phone; tune if needed.
-2. Website polish for an Awwwards submission: social preview image, favicon, page metadata; a final art-direction pass.
-3. Per-effect tuning (Shatter on dark inputs, Ink, Origami) and a postable clip per effect.
-4. `scree-react` package (components + scroll hook) and a docs site with recipes.
-5. Launch: technical write-up, demo clips, Awwwards / CSSDA submission.
-6. Later (servers allowed when earned): GitHub release bot, API, Figma plugin, GIF / alpha video export, Scree Pro.
+1. A Next.js App Router example for route changes, and `<Scree.Transition>`.
+2. Live text (real fonts as glyph pieces) and SVG sources.
+3. A showcase app (dashboard / settings / detail) on the site and a write-up.
+4. Measure on real devices; per-effect tuning and clips; a docs site.
+5. Launch through free channels only (no paid award submissions).
 
 The authoritative task list with checkboxes is in `plans/SCREE_PLAN.md` (local).
