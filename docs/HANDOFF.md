@@ -102,9 +102,9 @@ Everything new is a **plug**, never an engine rewrite.
 
 ## 7. Where things stand
 
-**Released:** `scree-core` 0.2.0 and `scree-react` 0.1.0 (npm).
+**Released (2026-10-10):** `scree-core` 0.3.0 and `scree-react` 0.2.0, both by GitHub release + trusted publishing (tags `v0.3.0`, `react-v0.2.0`). The Next.js example builds from the public packages.
 
-**On main, not yet released:** `scree-core` 0.3.0 and `scree-react` 0.2.0. The website already advertises them (the Builders "React" / "Interfaces" tabs and `/interfaces/`), so push and release together.
+**In these releases:**
 - Scroll stories: `warm(from, to)`, offscreen pause (pair crossing 84 ms to 4 ms).
 - Interfaces: `snapshotElement` / `createElementTarget` (`src/engine/sources/from-dom.ts`), `transitionDom` / `primeDom` (`src/engine/dom/transition.ts`), group pairing and still pieces (`src/engine/pieces/build.ts`), picture framing (`src/engine/camera.ts`).
 - React: `useSceneTransition` (in-page changes), `ScreeStage` + `useScreeStage().go(navigate)` (route changes).
@@ -120,7 +120,7 @@ Everything new is a **plug**, never an engine rewrite.
 
 **Measured (headless, software GL; real GPUs are faster):** click to motion 150–330 ms after the first transition; layers match within one device pixel at 100–200 % scaling.
 
-**To release:** push `main` (redeploys the site), GitHub release `v0.3.0` (scree-core), then `react-v0.2.0` (scree-react; needs the trusted publisher on npmjs.com: GitHub Actions, `imshivamb/Scree`, `publish-react.yml`).
+**To release next time:** bump the version, push `main`, then a GitHub release tagged `v<version>` (scree-core) or `react-v<version>` (scree-react). Both packages have trusted publishers.
 
 **Capture (`src/engine/sources/from-dom.ts`):** copies only styles that would not come for free (compared with per-tag browser defaults measured in a hidden standards-mode frame, and with the parent for properties that tag really inherits); always copies size, `min-*`, `color` and `color-scheme` (context-dependent); nodes wholly off screen keep their box but not their insides; `::before`/`::after` are looked up only on elements a stylesheet gives them; canvases become images; form values are kept. 1,500 nodes: about 170 ms (was 1,500 ms), with the same fidelity as copying every property (checked by diffing every computed property of the clone against the live page).
 
@@ -130,7 +130,6 @@ Everything new is a **plug**, never an engine rewrite.
 
 **Next, in order:**
 1. The user checks `/interfaces/` on their laptop and phone; tune from what they feel.
-2. Release 0.3.0 / 0.2.0.
 3. Live text (real fonts as glyph pieces) and SVG sources.
 4. A write-up and clips for free channels; a docs site.
 
