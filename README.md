@@ -61,6 +61,14 @@ window.addEventListener("scroll", () => {
 });
 ```
 
+### In React and Next.js
+
+[`scree-react`](packages/react) wraps all of that in a component (and a scroll hook), safe to render on the server:
+
+```tsx
+<ScreeSequence images={pictures} progress={scroll * (pictures.length - 1)} effect="shatter" />
+```
+
 ## Effects
 
 ```ts
