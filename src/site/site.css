@@ -651,6 +651,22 @@ body.is-scrolled .descend {
   color: var(--stone);
 }
 
+.tab-link {
+  display: inline-block;
+  margin-top: 10px;
+  color: var(--ember);
+  font: 400 13px var(--mono);
+  text-decoration: none;
+}
+
+.tab-link:hover {
+  text-decoration: underline;
+}
+
+.tab-link[hidden] {
+  display: none;
+}
+
 .code-stack {
   min-width: 0;
 }

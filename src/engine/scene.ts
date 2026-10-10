@@ -97,6 +97,11 @@ export type ScreeOptions = {
   fit?: number;
   /** Start with a registered effect (see `listEffects()`), e.g. "pieces" or "liquid". */
   effect?: string;
+  /**
+   * "content" (default) frames what is visible in each picture. "picture" frames the picture's
+   * own edges: with `fit: 1` a picture with the canvas's aspect fills it exactly, as an overlay needs.
+   */
+  framing?: "content" | "picture";
   onTransitionStateChange?: (isTransitioning: boolean) => void;
   onProgress?: (progress: number) => void;
   onError?: (message: string) => void;
@@ -169,6 +174,7 @@ export class Scree {
   /** Whether `field.destination` has been paired point-to-point with the source. */
   private fieldPaired = false;
   private fit: number;
+  private readonly framing: "content" | "picture";
   private tilt = { x: 0, y: 0 };
   /** The two forms the camera frames; it glides between them with progress. */
   private cameraShot: {
@@ -215,6 +221,7 @@ export class Scree {
     this.look = { ...DEFAULT_LOOK, ...options.look };
     this.match = options.match ?? DEFAULT_MATCH;
     this.fit = options.fit ?? DEFAULT_FIT;
+    this.framing = options.framing ?? "content";
     this.camera.position.set(0, 0, 3.1);
     this.camera.lookAt(0, 0, 0);
 
@@ -424,18 +431,20 @@ export class Scree {
       fit: this.fit,
       scale: this.sourceScale.toArray(),
       distance,
+      picture: this.framing === "picture",
     });
     const to = frameTarget(destination, {
       aspect,
       fit: this.fit,
       scale: this.targetScale.toArray(),
       distance,
+      picture: this.framing === "picture",
     });
-    const { direction, distance: at } = blendFraming(from, to, this.progress);
+    const { direction, distance: at, center = [0, 0] } = blendFraming(from, to, this.progress);
     // A small lean (pointer parallax) on top of the framing.
     const lean = new THREE.Vector3(direction[0] + this.tilt.x, direction[1] + this.tilt.y, direction[2]).normalize();
-    this.camera.position.set(lean.x * at, lean.y * at, lean.z * at);
-    this.camera.lookAt(0, 0, 0);
+    this.camera.position.set(center[0] + lean.x * at, center[1] + lean.y * at, lean.z * at);
+    this.camera.lookAt(center[0], center[1], 0);
   }
 
   /**

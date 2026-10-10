@@ -1,7 +1,12 @@
 import type { ParticleTarget } from "./target";
 
 /** Where the camera sits for one form: a unit direction from the origin and a distance. */
-export type Framing = { direction: [number, number, number]; distance: number };
+export type Framing = {
+  direction: [number, number, number];
+  distance: number;
+  /** Where the camera looks (x, y); the origin unless a picture is framed by its own edges. */
+  center?: [number, number];
+};
 
 export const CAMERA_FOV_DEG = 42;
 export const DEFAULT_FIT = 0.8;
@@ -53,8 +58,23 @@ export function frameTarget(
     fit?: number;
     scale?: [number, number, number];
     distance?: number;
+    /** Frame the picture's own edges instead of its content, so a rest frame lands pixel for pixel. */
+    picture?: boolean;
   },
 ): Framing {
+  const rect = options.picture ? target.image?.rect : undefined;
+  if (rect) {
+    const halfX = ((rect.right - rect.left) / 2) * (options.scale?.[0] ?? 1);
+    const halfY = ((rect.top - rect.bottom) / 2) * (options.scale?.[1] ?? 1);
+    const fit = Math.min(1, Math.max(0.1, options.fit ?? DEFAULT_FIT));
+    const tanHalf = Math.tan((CAMERA_FOV_DEG * Math.PI) / 360);
+    const aspect = Math.max(0.05, options.aspect);
+    return {
+      direction: STRAIGHT,
+      distance: options.distance ?? Math.max(halfY / (tanHalf * fit), halfX / (tanHalf * aspect * fit)),
+      center: [(rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2],
+    };
+  }
   const extent = extentOf(target);
   const [sx, sy, sz] = options.scale ?? [1, 1, 1];
   const fit = Math.min(1, Math.max(0.1, options.fit ?? DEFAULT_FIT));
@@ -84,5 +104,13 @@ export function blendFraming(from: Framing, to: Framing, t: number): Framing {
       mix(from.direction[2], to.direction[2]),
     ]),
     distance: mix(from.distance, to.distance),
+    ...(from.center || to.center
+      ? {
+          center: [
+            mix(from.center?.[0] ?? 0, to.center?.[0] ?? 0),
+            mix(from.center?.[1] ?? 0, to.center?.[1] ?? 0),
+          ] as [number, number],
+        }
+      : {}),
   };
 }

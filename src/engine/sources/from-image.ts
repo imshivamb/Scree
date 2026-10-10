@@ -80,6 +80,17 @@ export async function createImageTargetFromFile(
   }
 }
 
+/** A target from a canvas you have drawn, with no encode and decode in between. */
+export function createImageTargetFromCanvas(
+  canvas: HTMLCanvasElement,
+  options: ImageTargetOptions = {},
+): ParticleTarget {
+  return buildParticleTarget(
+    pixelSourceFromImage(canvas, canvas.width, canvas.height),
+    imageOptions(options, canvas),
+  );
+}
+
 export const createSvgTarget = createImageTarget;
 export const loadParticleTargetFromUrl = createImageTarget;
 export const loadParticleTargetFromFile = createImageTargetFromFile;

@@ -5,11 +5,13 @@ import {
   type CSSProperties,
   type RefObject,
 } from "react";
+import { flushSync } from "react-dom";
 import {
   createDustTarget,
   createImageTarget,
   createScree,
   getEffect,
+  primeDom,
   transitionDom,
   type DomTransitionOptions,
   type MatchStrategy,
@@ -309,7 +311,7 @@ export type SceneTransitionOptions = Omit<DomTransitionOptions, "update">;
 /**
  * Play a change to part of the page as a Scree transition. Attach `ref` to the
  * element that changes, then call `run(update)` where `update` makes the change
- * (set state, navigate). The element is captured before and after, the pieces
+ * (set state, navigate); it is committed at once with `flushSync`. The element is captured before and after, the pieces
  * travel, and the live page is handed back. Elements marked `data-scree="name"`
  * in both states travel as one block. Without `await`, `run` still plays; with
  * reduced motion it only applies the change.
@@ -319,6 +321,17 @@ export function useSceneTransition<T extends HTMLElement = HTMLDivElement>(defau
   const running = useRef(false);
   const base = useRef(defaults);
   base.current = defaults;
+  // Capture the first state once the page is quiet, so the first click is as quick as the rest.
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const start = () => primeDom(element, { scale: base.current.scale, background: base.current.background });
+    const handle = typeof requestIdleCallback === "function" ? requestIdleCallback(start, { timeout: 1500 }) : setTimeout(start, 200);
+    return () => {
+      if (typeof cancelIdleCallback === "function" && typeof handle === "number") cancelIdleCallback(handle);
+      else clearTimeout(handle as ReturnType<typeof setTimeout>);
+    };
+  }, []);
   const run = async (update: () => void | Promise<void>, options: SceneTransitionOptions = {}) => {
     const element = ref.current;
     if (!element || running.current) {
@@ -327,7 +340,8 @@ export function useSceneTransition<T extends HTMLElement = HTMLDivElement>(defau
     }
     running.current = true;
     try {
-      await transitionDom(element, { ...base.current, ...options, update });
+      // React applies state later; commit it now so the "after" picture shows the new screen.
+      await transitionDom(element, { ...base.current, ...options, update: () => flushSync(update) });
     } finally {
       running.current = false;
     }

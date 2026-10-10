@@ -5,7 +5,7 @@ export default defineConfig({
   build: {
     emptyOutDir: true,
     lib: { entry: "src/index.tsx", formats: ["es"], fileName: () => "index.js" },
-    rollupOptions: { external: ["react", "react/jsx-runtime", "scree-core"],
+    rollupOptions: { external: ["react", "react-dom", "react/jsx-runtime", "scree-core"],
       output: { banner: "\"use client\";" },
     },
   },

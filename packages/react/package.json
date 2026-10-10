@@ -34,6 +34,7 @@
   "sideEffects": false,
   "peerDependencies": {
     "react": ">=18",
+    "react-dom": ">=18",
     "scree-core": ">=0.3.0"
   }
 }

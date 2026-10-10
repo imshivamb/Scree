@@ -150,6 +150,7 @@ function setupInstall(): void {
   const state = button?.querySelector(".install-state");
   const text = button?.querySelector(".install-text");
   const note = document.getElementById("tab-note");
+  const link = document.getElementById("tab-link");
   const tabs = document.querySelectorAll<HTMLButtonElement>(".tab");
   const panels = document.querySelectorAll<HTMLElement>("[data-panel]");
 
@@ -162,6 +163,7 @@ function setupInstall(): void {
       if (button) button.dataset.copy = info.install;
       if (text) text.textContent = info.install;
       if (note) note.textContent = info.note;
+      if (link) link.hidden = id !== "interfaces";
     });
   }
 

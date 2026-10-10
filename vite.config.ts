@@ -15,12 +15,16 @@ export default defineConfig({
         lab: resolve(import.meta.dirname, "lab/index.html"),
         labReact: resolve(import.meta.dirname, "lab/react/index.html"),
         labDom: resolve(import.meta.dirname, "lab/dom/index.html"),
+        interfaces: resolve(import.meta.dirname, "interfaces/index.html"),
       },
     },
   },
   resolve: {
     // The React package imports the engine by its published name; here it is the source.
-    alias: { "scree-core": resolve(import.meta.dirname, "src/engine/index.ts") },
+    alias: {
+      "scree-core": resolve(import.meta.dirname, "src/engine/index.ts"),
+      "scree-react": resolve(import.meta.dirname, "packages/react/src/index.tsx"),
+    },
   },
   worker: {
     format: "es",

@@ -82,6 +82,8 @@ await transitionDom(document.querySelector("#panel")!, {
 });
 ```
 
+Live demo: [/interfaces](https://scree-tau.vercel.app/interfaces/). The overlay lands on the element pixel for pixel, so the hand-off is invisible. Call `primeDom(element)` once the page is quiet to capture the current state ahead of time; after that, a click only captures the new state (`useSceneTransition` does this for you).
+
 Mark elements that should travel as one block with `data-scree="name"` in both states: `<div data-scree="revenue">` on the dashboard flies to the `revenue` card on the next screen. Reduced motion applies the change at once. Not captured: video frames, iframes and cross-origin images without CORS.
 
 ```tsx
@@ -236,6 +238,7 @@ scree.setTilt(0.1, -0.05); // lean the camera: pieces in flight separate in dept
 | `setEffect(id)` / `getEffect()` | Choose the transition |
 | `setMatch()` / `setStyle()` / `setFit()` / `setTilt()` | Pairing, finish, framing, parallax |
 | `record(options)` / `snapshot(options)` | MP4, PNG sequence, PNG |
+| `transitionDom(element, { update })` / `primeDom(element)` | Play a change to live DOM as a transition; capture the current state ahead of time |
 | `resize(width, height)` / `dispose()` | Lifecycle |
 | `listEffects()` / `defineEffect()` / `registerEffect()` / `registerSurfaceShader()` | The effect library |
 
@@ -248,6 +251,7 @@ Reduced motion is respected by default: transitions jump to the final picture.
 | Path | What it is |
 |---|---|
 | `src/engine` | The `scree-core` library |
+| `interfaces/index.html`, `src/interfaces` | The live-interface demo at `/interfaces/` (built with `scree-react`) |
 | `index.html`, `src/site` | The website at `/` — one scroll-driven Scree transition with artwork generated in code |
 | `studio/index.html`, `src/studio` | The Studio at `/studio/` — templates, your own images, every effect, export |
 | `lab/index.html` | A developer lab for renderers and drivers (unlinked) |

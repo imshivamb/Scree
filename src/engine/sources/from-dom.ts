@@ -1,4 +1,4 @@
-import { createImageTarget } from "./from-image";
+import { createImageTargetFromCanvas } from "./from-image";
 import type { ImageTargetOptions, ParticleTarget } from "./types";
 
 /** An element marked `data-scree="name"`, in CSS pixels relative to the snapshot's top-left. */
@@ -21,48 +21,92 @@ export type DomSnapshotOptions = {
 
 const MAX_SIDE = 4096;
 
-/** Fetch a URL and return it as a data URL, or the original when it cannot be read. */
-async function toDataUrl(url: string): Promise<string> {
-  if (url.startsWith("data:")) return url;
-  try {
-    const response = await fetch(url, { mode: "cors" });
-    if (!response.ok) return url;
-    const blob = await response.blob();
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return url;
+const dataUrls = new Map<string, Promise<string>>();
+const sheetTexts = new Map<string, Promise<string>>();
+
+/** Fetch a URL and return it as a data URL, or the original when it cannot be read. Cached per URL. */
+function toDataUrl(url: string): Promise<string> {
+  if (url.startsWith("data:")) return Promise.resolve(url);
+  let pending = dataUrls.get(url);
+  if (!pending) {
+    pending = (async () => {
+      try {
+        const response = await fetch(url, { mode: "cors" });
+        if (!response.ok) return url;
+        const blob = await response.blob();
+        return await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(blob);
+        });
+      } catch {
+        return url;
+      }
+    })();
+    dataUrls.set(url, pending);
   }
+  return pending;
+}
+
+/** The text of a stylesheet we may not read through the CSSOM (e.g. Google Fonts), fetched over CORS. */
+function sheetText(href: string): Promise<string> {
+  let pending = sheetTexts.get(href);
+  if (!pending) {
+    pending = fetch(href, { mode: "cors" })
+      .then((response) => (response.ok ? response.text() : ""))
+      .catch(() => "");
+    sheetTexts.set(href, pending);
+  }
+  return pending;
+}
+
+/** Only faces that cover basic Latin: font services split a family into many subsets. */
+function coversLatin(rule: string): boolean {
+  const range = /unicode-range:\s*([^;}]+)/i.exec(rule)?.[1];
+  if (!range) return true;
+  return range.split(",").some((part) => {
+    const [start] = part.trim().replace(/^U\+/i, "").split("-");
+    const value = parseInt((start ?? "").replace(/\?/g, "0"), 16);
+    return value <= 0x41;
+  });
+}
+
+async function embedUrls(rule: string, base: string): Promise<string> {
+  let text = rule;
+  for (const match of Array.from(rule.matchAll(/url\(["']?([^"')]+)["']?\)/g))) {
+    const absolute = new URL(match[1] as string, base).href;
+    text = text.replace(match[0], `url(${await toDataUrl(absolute)})`);
+  }
+  return text;
 }
 
 /** `@font-face` rules the page declares, with font files embedded so the snapshot keeps its type. */
 async function embeddedFontCss(families: Set<string>): Promise<string> {
-  const rules: string[] = [];
+  const faces: { rule: string; base: string }[] = [];
   for (const sheet of Array.from(document.styleSheets)) {
-    let cssRules: CSSRuleList;
+    const base = sheet.href ?? document.baseURI;
+    let cssRules: CSSRuleList | undefined;
     try {
       cssRules = sheet.cssRules;
     } catch {
-      continue; // a cross-origin sheet we may not read
+      cssRules = undefined;
     }
-    for (const rule of Array.from(cssRules)) {
-      if (!(rule instanceof CSSFontFaceRule)) continue;
-      const family = rule.style.getPropertyValue("font-family").replace(/["']/g, "").trim();
-      if (!families.has(family)) continue;
-      const base = sheet.href ?? document.baseURI;
-      let text = rule.cssText;
-      const urls = Array.from(text.matchAll(/url\(["']?([^"')]+)["']?\)/g));
-      for (const match of urls) {
-        const raw = match[1] as string;
-        const absolute = new URL(raw, base).href;
-        text = text.replace(match[0], `url(${await toDataUrl(absolute)})`);
+    if (cssRules) {
+      for (const rule of Array.from(cssRules)) {
+        if (rule instanceof CSSFontFaceRule) faces.push({ rule: rule.cssText, base });
       }
-      rules.push(text);
+    } else if (sheet.href) {
+      const text = await sheetText(sheet.href);
+      for (const match of text.matchAll(/@font-face\s*{[^}]*}/g)) faces.push({ rule: match[0], base });
     }
+  }
+
+  const rules: string[] = [];
+  for (const { rule, base } of faces) {
+    const family = /font-family:\s*([^;]+);/i.exec(rule)?.[1]?.replace(/["']/g, "").trim();
+    if (!family || !families.has(family) || !coversLatin(rule)) continue;
+    rules.push(await embedUrls(rule, base));
   }
   return rules.join("\n");
 }
@@ -187,8 +231,13 @@ export async function createElementTarget(
   options: ImageTargetOptions & DomSnapshotOptions = {},
 ): Promise<ParticleTarget & { groups: DomGroup[] }> {
   const snapshot = await snapshotElement(element, options);
-  const target = await createImageTarget(snapshot.canvas.toDataURL("image/png"), options);
+  const target = createImageTargetFromCanvas(snapshot.canvas, options);
   if (target.image) {
+    // Sampling rounds the picture's size; restore the element's exact aspect so an overlay lands pixel for pixel.
+    const rect = target.image.rect;
+    const middle = (rect.top + rect.bottom) / 2;
+    const half = ((rect.right - rect.left) * (snapshot.height / snapshot.width)) / 2;
+    target.image.rect = { ...rect, top: middle + half, bottom: middle - half };
     target.image.groups = snapshot.groups.map((group) => ({
       id: group.id,
       u0: group.left / snapshot.width,
