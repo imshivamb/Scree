@@ -368,10 +368,14 @@ type StageContext = {
 };
 
 const Stage = createContext<StageContext | null>(null);
+/** The navigation of a back or forward step: the browser has already made it. */
+const HISTORY = () => undefined;
 
 export type ScreeStageProps = SceneTransitionOptions & {
   /** Changes when the route has rendered, e.g. `usePathname()` in Next.js. */
   routeKey: string;
+  /** Play the browser's back and forward buttons as transitions too. Default true. */
+  animateHistory?: boolean;
   /** How long to wait for a route before showing it without a transition. Default 2000 ms. */
   timeoutMs?: number;
   children: ReactNode;
@@ -382,21 +386,31 @@ export type ScreeStageProps = SceneTransitionOptions & {
 /**
  * Route changes as Scree transitions. Wrap the part of the layout that changes
  * between pages, give it the current route as `routeKey`, and navigate with
- * `useScreeStage().go(() => router.push(href))`. Navigations made any other way
- * (the back button, a plain link) still work; they just are not animated.
+ * `useScreeStage().go(() => router.push(href), { to: href })`. Back and forward
+ * play too; a plain link still works, it just is not animated.
  */
-export function ScreeStage({ routeKey, timeoutMs = 2000, children, className, style, ...defaults }: ScreeStageProps) {
+export function ScreeStage({
+  routeKey,
+  animateHistory = true,
+  timeoutMs = 2000,
+  children,
+  className,
+  style,
+  ...defaults
+}: ScreeStageProps) {
   const { ref, run } = useSceneTransition<HTMLDivElement>(defaults);
   /** Called when a route renders, with its key. */
   const arrived = useRef<((key: string) => void) | null>(null);
   /** Where the stage is heading: the last route asked for, or the current one. */
   const heading = useRef(routeKey);
+  /** Navigations with a `to` still on their way; while none are, the stage heads where it is. */
+  const inFlight = useRef(0);
   const current = useRef(routeKey);
   current.current = routeKey;
 
   // A route is in the DOM: let the transition capture it.
   useLayoutEffect(() => {
-    if (!arrived.current) heading.current = routeKey; // reached some other way (back, a plain link)
+    if (inFlight.current === 0) heading.current = routeKey; // reached some other way (back, a plain link)
     arrived.current?.(routeKey);
   }, [routeKey]);
 
@@ -406,12 +420,20 @@ export function ScreeStage({ routeKey, timeoutMs = 2000, children, className, st
         if (to !== undefined) {
           if (to === heading.current) return Promise.resolve();
           heading.current = to;
+          inFlight.current += 1;
         }
+        const from = current.current;
+        const settle = () => {
+          if (to === undefined) return;
+          inFlight.current -= 1;
+          if (inFlight.current === 0) heading.current = current.current;
+        };
         return run(
           () =>
             new Promise<void>((resolve) => {
               // Changes play one after another, so by now earlier routes have rendered.
-              if (to !== undefined && current.current === to) {
+              // A history step may even have rendered already, inside its own event.
+              if ((to !== undefined && current.current === to) || (navigate === HISTORY && current.current !== from)) {
                 resolve();
                 return;
               }
@@ -427,13 +449,21 @@ export function ScreeStage({ routeKey, timeoutMs = 2000, children, className, st
               navigate();
             }),
           options,
-        );
+        ).finally(settle);
       },
     }),
     // `run` reads the latest options itself.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [timeoutMs],
   );
+
+  // Back and forward: the browser changes the route itself; play it like any other.
+  useEffect(() => {
+    if (!animateHistory) return;
+    const onPop = () => void value.go(HISTORY);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [animateHistory, value]);
 
   return (
     <Stage.Provider value={value}>

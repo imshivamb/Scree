@@ -98,4 +98,4 @@ function Nav() {
 }
 ```
 
-The page freezes, the route renders, and its pieces travel in; what did not change stays still. If a route takes longer than `timeoutMs` (2 s) it is shown without a transition. Back/forward navigate normally. A complete example is in [`examples/next`](../../examples/next).
+The page freezes, the route renders, and its pieces travel in; what did not change stays still. If a route takes longer than `timeoutMs` (2 s) it is shown without a transition. Back and forward play as transitions too (`animateHistory={false}` turns that off). A complete example is in [`examples/next`](../../examples/next).
