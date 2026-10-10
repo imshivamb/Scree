@@ -70,15 +70,32 @@ const backdrop = (element: Element) => seenColor(element.parentElement);
 /** What is seen on the element itself: the surface its content moves across. */
 const surfaceOf = (element: Element) => seenColor(element);
 
-type DomState = Awaited<ReturnType<typeof createElementTarget>>;
+/** A captured state, and where on screen (viewport CSS pixels) the drawn part sat. */
+type DomState = Awaited<ReturnType<typeof createElementTarget>> & { rect: DOMRect };
 
-function capture(element: HTMLElement, options: DomPrimeOptions, opaque = false): Promise<DomState> {
-  return createElementTarget(element, {
+/** Only what is on screen is drawn: a long page costs what the viewport costs. */
+function visiblePart(element: HTMLElement): DOMRect | null {
+  const box = element.getBoundingClientRect();
+  const left = Math.max(box.left, 0);
+  const top = Math.max(box.top, 0);
+  const right = Math.min(box.right, window.innerWidth);
+  const bottom = Math.min(box.bottom, window.innerHeight);
+  if (right - left < 1 || bottom - top < 1) return null;
+  return new DOMRect(left, top, right - left, bottom - top);
+}
+
+async function capture(element: HTMLElement, options: DomPrimeOptions, opaque = false): Promise<DomState> {
+  const rect = visiblePart(element);
+  if (!rect) throw new Error("The element is not on screen.");
+  const box = element.getBoundingClientRect();
+  const state = await createElementTarget(element, {
     particleCount: PARTICLES,
     opaque,
     scale: options.scale,
     background: options.background ?? backdrop(element),
+    clip: { left: rect.left - box.left, top: rect.top - box.top, width: rect.width, height: rect.height },
   });
+  return Object.assign(state, { rect });
 }
 
 // ——— Captures made ahead of time ———
@@ -132,10 +149,15 @@ function remember(element: HTMLElement, options: DomPrimeOptions, known?: DomSta
   resize.observe(element);
   const events = ["pointerover", "pointerout", "focusin", "focusout", "input"] as const;
   for (const name of events) element.addEventListener(name, stale, { passive: true });
+  // What is on screen changes with any scroll (of the page or a scroller around the element).
+  window.addEventListener("scroll", stale, { passive: true, capture: true });
+  window.addEventListener("resize", stale, { passive: true });
   const stop = () => {
     mutations.disconnect();
     resize.disconnect();
     for (const name of events) element.removeEventListener(name, stale);
+    window.removeEventListener("scroll", stale, { capture: true });
+    window.removeEventListener("resize", stale);
   };
   entry.stop = () => {
     stop();
@@ -280,7 +302,7 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
   // is made and captured underneath, so the new screen never shows early.
   const previousOpacity = element.style.opacity;
   const previousTransition = element.style.transition;
-  const start = element.getBoundingClientRect();
+  const start = from.rect;
   const cover = coverWith(from, start);
   if (cover) document.body.appendChild(cover);
   element.style.transition = "none";
@@ -298,12 +320,13 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
     throw error;
   }
   await frame();
-  const end = element.getBoundingClientRect();
   let to: DomState;
+  let end: DOMRect;
   let pair: [ParticleTarget, ParticleTarget];
   let box: { left: number; top: number; width: number; height: number };
   try {
     to = await capture(element, shot, true);
+    end = to.rect;
     // The element may have changed size or moved (a longer page, a scroll): put both
     // states in the frame they share, each where it really sat, so nothing stretches.
     const same =

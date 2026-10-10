@@ -122,12 +122,14 @@ Everything new is a **plug**, never an engine rewrite.
 
 **To release:** push `main` (redeploys the site), GitHub release `v0.3.0` (scree-core), then `react-v0.2.0` (scree-react; needs the trusted publisher on npmjs.com: GitHub Actions, `imshivamb/Scree`, `publish-react.yml`).
 
-**Known limits:** a state whose box changes size is scaled to the new box; a page that scrolls on navigation can misplace the cover; Liquid leaves a faint dark speck in the corners; capture skips video, iframes and cross-origin images without CORS; group pairing and still pieces apply to the pieces family only; back/forward is not animated.
+**Also handled:** quick clicks (a new change hurries the playing one; bursts play as one to the latest state), elements that change size or move (both states share one frame), long pages (only the visible part is captured, sharp at any DPR), back/forward in `ScreeStage`.
+
+**Known limits:** Liquid leaves a faint dark speck in the corners; capture skips video, iframes and cross-origin images without CORS; group pairing and still pieces apply to the pieces family only; content below a growing element jumps at once (as it would without Scree).
 
 **Next, in order:**
 1. The user checks `/interfaces/` on their laptop and phone; tune from what they feel.
 2. Release 0.3.0 / 0.2.0.
-3. Live text (real fonts as glyph pieces) and SVG sources; animate back/forward.
+3. Live text (real fonts as glyph pieces) and SVG sources.
 4. A write-up and clips for free channels; a docs site.
 
 The authoritative task list with checkboxes is in `plans/SCREE_PLAN.md` (local).

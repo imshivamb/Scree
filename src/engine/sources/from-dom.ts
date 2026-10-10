@@ -19,6 +19,11 @@ export type DomSnapshotOptions = {
   background?: string;
   /** Draw the element fully opaque even if it is hidden with `opacity` right now (as during a hand-off). */
   opaque?: boolean;
+  /**
+   * Draw only this part of the element (CSS pixels from its top-left), e.g. what is
+   * on screen. A long page then costs what the viewport costs and stays sharp.
+   */
+  clip?: { left: number; top: number; width: number; height: number };
 };
 
 const MAX_SIDE = 4096;
@@ -181,8 +186,11 @@ export async function snapshotElement(
   options: DomSnapshotOptions = {},
 ): Promise<DomSnapshot> {
   const box = element.getBoundingClientRect();
-  const width = Math.max(1, Math.round(box.width));
-  const height = Math.max(1, Math.round(box.height));
+  const fullWidth = Math.max(1, Math.round(box.width));
+  const fullHeight = Math.max(1, Math.round(box.height));
+  const clip = options.clip ?? { left: 0, top: 0, width: fullWidth, height: fullHeight };
+  const width = Math.max(1, Math.round(clip.width));
+  const height = Math.max(1, Math.round(clip.height));
   const wanted = options.scale ?? Math.min(window.devicePixelRatio || 1, 2);
   const scale = Math.min(wanted, MAX_SIDE / Math.max(width, height));
 
@@ -192,7 +200,11 @@ export async function snapshotElement(
     const id = node.getAttribute("data-scree");
     if (!id) continue;
     const rect = node.getBoundingClientRect();
-    groups.push({ id, left: rect.left - box.left, top: rect.top - box.top, width: rect.width, height: rect.height });
+    const left = rect.left - box.left - clip.left;
+    const top = rect.top - box.top - clip.top;
+    // Only groups that show in the drawn part.
+    if (left + rect.width <= 0 || top + rect.height <= 0 || left >= width || top >= height) continue;
+    groups.push({ id, left, top, width: rect.width, height: rect.height });
   }
 
   const clone = element.cloneNode(true) as HTMLElement;
@@ -201,8 +213,8 @@ export async function snapshotElement(
   clone.style.setProperty("margin", "0");
   if (options.opaque) clone.style.setProperty("opacity", "1");
   clone.style.setProperty("position", "static");
-  clone.style.setProperty("width", `${width}px`);
-  clone.style.setProperty("height", `${height}px`);
+  clone.style.setProperty("width", `${fullWidth}px`);
+  clone.style.setProperty("height", `${fullHeight}px`);
   clone.style.setProperty("transform", "none");
   clone.style.setProperty("box-sizing", "border-box");
 
@@ -210,7 +222,7 @@ export async function snapshotElement(
   const markup =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
     (fontCss ? `<style>${fontCss}</style>` : "") +
-    `<foreignObject x="0" y="0" width="100%" height="100%">` +
+    `<foreignObject x="${-clip.left}" y="${-clip.top}" width="${fullWidth}" height="${fullHeight}">` +
     new XMLSerializer().serializeToString(clone) +
     `</foreignObject></svg>`;
 
