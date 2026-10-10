@@ -1,4 +1,6 @@
 export { createScree, Scree } from "./scene";
+export { transitionDom } from "./dom/transition";
+export type { DomTransitionOptions } from "./dom/transition";
 export type { MorphToOptions, ScreeOptions, TransitionOptions } from "./scene";
 export {
   clipSeconds,

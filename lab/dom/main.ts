@@ -1,4 +1,4 @@
-import { createElementTarget, createScree } from "../../src/engine";
+import { createElementTarget, createScree, transitionDom } from "../../src/engine";
 
 const log = (text: string) => {
   const line = document.getElementById("log") as HTMLElement;
@@ -36,3 +36,19 @@ async function main() {
 }
 
 main().catch((error) => log(`error: ${error instanceof Error ? error.message : String(error)}`));
+
+const live = document.getElementById("live") as HTMLElement;
+const panels = [document.getElementById("a"), document.getElementById("b")].map((el) => (el as HTMLElement).innerHTML);
+let which = 0;
+live.innerHTML = panels[0] as string;
+(document.getElementById("swap") as HTMLElement).onclick = () => {
+  void transitionDom(live, {
+    effect,
+    durationSeconds: 1.6,
+    update: () => {
+      which = 1 - which;
+      live.innerHTML = panels[which] as string;
+    },
+  });
+};
+(window as unknown as Record<string, unknown>).__swap = () => (document.getElementById("swap") as HTMLElement).click();
