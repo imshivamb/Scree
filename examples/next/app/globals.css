@@ -158,6 +158,8 @@ h1 {
 @media (max-width: 700px) {
   .app {
     grid-template-columns: 1fr;
+    /* The tab bar keeps its own height; spare height goes to the content, not the bar. */
+    grid-template-rows: auto 1fr;
   }
 
   .side {

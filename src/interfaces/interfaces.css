@@ -543,6 +543,8 @@ h1 em {
 
   .app {
     grid-template-columns: minmax(0, 1fr);
+    /* The tab bar keeps its own height; spare height goes to the content, not the bar. */
+    grid-template-rows: auto 1fr;
   }
 
   .side {
