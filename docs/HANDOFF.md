@@ -106,14 +106,17 @@ Everything new is a **plug**, never an engine rewrite.
 
 **Merged on main, not yet released:** `scree-core` 0.3.0 and `scree-react` 0.2.0.
 - `warm(from, to)` and the React scroll-story smoothness pass (pair crossing 84 ms to 4 ms).
-- Interfaces (Horizon 1): `snapshotElement` / `createElementTarget` (live DOM as a state, `src/engine/sources/from-dom.ts`), group-aware piece pairing for `data-scree` regions (`src/engine/pieces/build.ts`), `transitionDom(element, { update })` (`src/engine/dom/transition.ts`), and `useSceneTransition` in `scree-react`. Try it at `/lab/dom/`.
+- Interfaces (Horizon 1): `snapshotElement` / `createElementTarget` (live DOM as a state, `src/engine/sources/from-dom.ts`), group-aware piece pairing for `data-scree` regions (`src/engine/pieces/build.ts`), `transitionDom(element, { update })` (`src/engine/dom/transition.ts`), and `useSceneTransition` in `scree-react`. The public demo is `/interfaces/` (`src/interfaces`); `/lab/dom/` is a developer test bench.
+- Overlay details (`src/engine/dom/transition.ts`): one reused, paused-when-idle engine; canvas 1.3x the element with `framing: "picture"` and `fit: 1/1.3` so rest frames land pixel for pixel; the element's own surface under the pieces; captures primed ahead of time and dropped on any DOM, hover, focus or size change.
 
 **To release:** push `main` (redeploys the site), release `scree-core` with a GitHub release tagged `v0.3.0`, then `scree-react` with `react-v0.2.0` (needs the trusted publisher added on npmjs.com for `scree-react`: GitHub Actions, `imshivamb/Scree`, `publish-react.yml`).
 
-**Known limits:** DOM capture skips video frames, iframes and cross-origin images without CORS; group pairing covers the pieces family only (particle effects ignore groups); a snapshot costs about 180 ms per screen; matching particle effects still runs on the main thread.
+**Measured (headless, software GL, so real GPUs are faster):** click to motion about 200–330 ms after the first transition, about 520 ms on the very first.
+
+**Known limits:** a picture whose size changes between states is scaled to the new box; Liquid leaves a faint dark speck in the corners; DOM capture skips video frames, iframes and cross-origin images without CORS; group pairing covers the pieces family only (particle effects ignore groups); a snapshot costs about 180 ms per screen; matching particle effects still runs on the main thread.
 
 **Next, in order:**
-1. A Next.js App Router example for route changes, and `<Scree.Transition>`.
+1. Real-device check of `/interfaces/` (laptop and phone), then a Next.js App Router example for route changes and `<Scree.Transition>`.
 2. Live text (real fonts as glyph pieces) and SVG sources.
 3. A showcase app (dashboard / settings / detail) on the site and a write-up.
 4. Measure on real devices; per-effect tuning and clips; a docs site.
