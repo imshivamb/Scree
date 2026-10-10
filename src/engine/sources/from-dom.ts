@@ -17,6 +17,8 @@ export type DomSnapshotOptions = {
   scale?: number;
   /** Paint behind transparent areas, e.g. the page background. Default transparent. */
   background?: string;
+  /** Draw the element fully opaque even if it is hidden with `opacity` right now (as during a hand-off). */
+  opaque?: boolean;
 };
 
 const MAX_SIDE = 4096;
@@ -197,6 +199,7 @@ export async function snapshotElement(
   const fonts = new Set<string>();
   await inlineTree(element, clone, fonts);
   clone.style.setProperty("margin", "0");
+  if (options.opaque) clone.style.setProperty("opacity", "1");
   clone.style.setProperty("position", "static");
   clone.style.setProperty("width", `${width}px`);
   clone.style.setProperty("height", `${height}px`);

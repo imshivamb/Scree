@@ -63,9 +63,10 @@ const backdrop = (element: Element) => seenColor(element.parentElement);
 /** What is seen on the element itself: the surface its content moves across. */
 const surfaceOf = (element: Element) => seenColor(element);
 
-function capture(element: HTMLElement, options: DomPrimeOptions): Promise<ParticleTarget> {
+function capture(element: HTMLElement, options: DomPrimeOptions, opaque = false): Promise<ParticleTarget> {
   return createElementTarget(element, {
     particleCount: PARTICLES,
+    opaque,
     scale: options.scale,
     background: options.background ?? backdrop(element),
   });
@@ -165,6 +166,27 @@ function overlayEngine() {
   return overlay;
 }
 
+/** The old screen's picture, laid exactly over the element. */
+function coverWith(target: ParticleTarget, box: DOMRect): HTMLCanvasElement | null {
+  const picture = target.image?.element;
+  if (!(picture instanceof HTMLCanvasElement)) return null;
+  const cover = document.createElement("canvas");
+  cover.width = picture.width;
+  cover.height = picture.height;
+  cover.getContext("2d")?.drawImage(picture, 0, 0);
+  cover.setAttribute("aria-hidden", "true");
+  Object.assign(cover.style, {
+    position: "fixed",
+    pointerEvents: "none",
+    zIndex: "2147483647",
+    left: `${box.left}px`,
+    top: `${box.top}px`,
+    width: `${box.width}px`,
+    height: `${box.height}px`,
+  });
+  return cover;
+}
+
 let running: Promise<void> = Promise.resolve();
 
 /**
@@ -197,13 +219,34 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
     return;
   }
 
-  await options.update();
+  // Freeze the old screen at once: its picture covers the element while the change
+  // is made and captured underneath, so the new screen never shows early.
+  const previousOpacity = element.style.opacity;
+  const previousTransition = element.style.transition;
+  const cover = coverWith(from, element.getBoundingClientRect());
+  if (cover) document.body.appendChild(cover);
+  element.style.transition = "none";
+  element.style.opacity = "0";
+  const reveal = () => {
+    element.style.opacity = previousOpacity;
+    element.style.transition = previousTransition;
+    cover?.remove();
+  };
+
+  try {
+    await options.update();
+  } catch (error) {
+    reveal();
+    throw error;
+  }
   await frame();
   const box = element.getBoundingClientRect();
   let to: ParticleTarget;
   try {
-    to = await capture(element, shot);
+    to = await capture(element, shot, true);
   } catch {
+    // The change is made; without a picture of it, just show it.
+    reveal();
     primeDom(element, shot);
     return;
   }
@@ -212,8 +255,6 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
   const { canvas, surface, engine } = shared;
   shared.runs += 1;
   const ids = [`scree-dom-${shared.runs}-from`, `scree-dom-${shared.runs}-to`] as const;
-  const previousOpacity = element.style.opacity;
-  const previousTransition = element.style.transition;
   try {
     // The canvas is the element's box grown by SPREAD about its centre; the framing
     // shrinks by the same factor, so the picture still lands on the element exactly.
@@ -234,7 +275,6 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
       borderRadius: style.borderRadius,
       background: surfaceOf(element),
     });
-    document.body.append(surface, canvas);
     engine.resize(Math.round(width), Math.round(height));
     engine.setEffect(options.effect ?? "pieces");
     if (options.match) engine.setMatch(options.match);
@@ -247,11 +287,12 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
     shared.ids = [...ids];
     engine.setPaused(false);
     engine.setProgress(0);
+    // Draw the first frame (the old screen, exactly) under the cover, then swap.
+    document.body.append(surface, canvas);
+    if (cover) document.body.appendChild(cover);
     await frame();
-
-    // Hide the live element (opacity keeps focus and layout) while the overlay plays.
-    element.style.transition = "none";
-    element.style.opacity = "0";
+    await frame();
+    cover?.remove();
 
     const total = (options.durationSeconds ?? 1.4) * 1000;
     const started = performance.now();
@@ -265,8 +306,7 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
       requestAnimationFrame(step);
     });
   } finally {
-    element.style.opacity = previousOpacity;
-    element.style.transition = previousTransition;
+    reveal();
     canvas.remove();
     surface.remove();
     engine.setPaused(true);
