@@ -133,9 +133,38 @@ function revealCopy(): void {
   for (const copy of document.querySelectorAll(".copy")) observer.observe(copy);
 }
 
+const TABS: Record<string, { install: string; note: string }> = {
+  images: { install: "npm i scree-core", note: "Any image to any image. Play it, scroll it, or export an MP4." },
+  react: {
+    install: "npm i scree-react scree-core",
+    note: "A component and a scroll hook for React and Next.js. Safe to render on the server.",
+  },
+  interfaces: {
+    install: "npm i scree-react scree-core",
+    note: "Tab switches and route changes: the old screen breaks and each element travels to its place on the next.",
+  },
+};
+
 function setupInstall(): void {
   const button = document.querySelector<HTMLButtonElement>(".install");
   const state = button?.querySelector(".install-state");
+  const text = button?.querySelector(".install-text");
+  const note = document.getElementById("tab-note");
+  const tabs = document.querySelectorAll<HTMLButtonElement>(".tab");
+  const panels = document.querySelectorAll<HTMLElement>("[data-panel]");
+
+  for (const tab of tabs) {
+    tab.addEventListener("click", () => {
+      const id = tab.dataset.tab ?? "images";
+      const info = TABS[id] ?? TABS.images!;
+      for (const other of tabs) other.setAttribute("aria-selected", String(other === tab));
+      for (const panel of panels) panel.hidden = panel.dataset.panel !== id;
+      if (button) button.dataset.copy = info.install;
+      if (text) text.textContent = info.install;
+      if (note) note.textContent = info.note;
+    });
+  }
+
   button?.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(button.dataset.copy ?? "");

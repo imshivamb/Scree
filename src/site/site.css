@@ -616,6 +616,49 @@ body.is-scrolled .descend {
   align-items: end;
 }
 
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 26px;
+}
+
+.tab {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--stone);
+  font: 400 12px var(--mono);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: color 250ms, border-color 250ms, background 250ms;
+}
+
+.tab:hover {
+  color: var(--bone);
+}
+
+.tab[aria-selected="true"] {
+  color: var(--bone);
+  border-color: var(--ember);
+  background: rgba(238, 232, 220, 0.06);
+}
+
+.builders p.tab-note {
+  min-height: 3.2em;
+  margin: 18px 0 0;
+  font-size: 0.95rem;
+  color: var(--stone);
+}
+
+.code-stack {
+  min-width: 0;
+}
+
+.code[hidden] {
+  display: none;
+}
+
 .install {
   margin-top: 30px;
   display: inline-flex;

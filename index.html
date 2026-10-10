@@ -133,14 +133,21 @@
             <p class="kicker"><span>07</span> For builders</p>
             <h2>Three lines <em>to a landslide.</em></h2>
             <p>
-              Vanilla or React, one dependency (three.js). Bring any image, pick an effect, scrub it with scroll
-              or export a frame-exact MP4.
+              One dependency (three.js). Use it on pictures, in React and Next.js, or on your real interface:
+              the old screen breaks and every element lands where it sits on the next one.
             </p>
+            <div class="tabs" role="tablist" aria-label="How to use Scree">
+              <button type="button" role="tab" class="tab" data-tab="images" aria-selected="true">Images</button>
+              <button type="button" role="tab" class="tab" data-tab="react" aria-selected="false">React</button>
+              <button type="button" role="tab" class="tab" data-tab="interfaces" aria-selected="false">Interfaces</button>
+            </div>
+            <p class="tab-note" id="tab-note">Any image to any image. Play it, scroll it, or export an MP4.</p>
             <button type="button" class="install" data-copy="npm i scree-core">
-              <span class="install-prompt">$</span> npm i scree-core <span class="install-state">Copy</span>
+              <span class="install-prompt">$</span> <span class="install-text">npm i scree-core</span> <span class="install-state">Copy</span>
             </button>
           </div>
-          <pre class="code" aria-label="Example code"><code><span class="c-k">import</span> { createScree, createImageTarget } <span class="c-k">from</span> <span class="c-s">"scree-core"</span>;
+          <div class="code-stack">
+          <pre class="code" data-panel="images" aria-label="Example code"><code><span class="c-k">import</span> { createScree, createImageTarget } <span class="c-k">from</span> <span class="c-s">"scree-core"</span>;
 
 <span class="c-k">const</span> scree = createScree({ canvas, effect: <span class="c-s">"shatter"</span> });
 scree.addTarget(<span class="c-s">"before"</span>, <span class="c-k">await</span> createImageTarget(<span class="c-s">"/v1.png"</span>));
@@ -148,6 +155,32 @@ scree.addTarget(<span class="c-s">"after"</span>, <span class="c-k">await</span>
 
 scree.transition({ from: <span class="c-s">"before"</span>, to: <span class="c-s">"after"</span> });
 <span class="c-c">// or: scroll-drive it, or scree.record() an MP4</span></code></pre>
+          <pre class="code" data-panel="react" aria-label="React example" hidden><code><span class="c-k">import</span> { ScreeSequence, useScrollProgress } <span class="c-k">from</span> <span class="c-s">"scree-react"</span>;
+
+<span class="c-k">function</span> Story() {
+  <span class="c-k">const</span> ref = useRef(<span class="c-k">null</span>);
+  <span class="c-k">const</span> scroll = useScrollProgress(ref);
+  <span class="c-k">return</span> (
+    &lt;section ref={ref} style={{ height: <span class="c-s">"500vh"</span> }}&gt;
+      &lt;ScreeSequence
+        images={pictures}
+        progress={scroll * (pictures.length - 1)}
+        effect=<span class="c-s">"shatter"</span>
+      /&gt;
+    &lt;/section&gt;
+  );
+}
+<span class="c-c">// SSR-safe, "use client" included, reduced motion respected</span></code></pre>
+          <pre class="code" data-panel="interfaces" aria-label="Interface example" hidden><code><span class="c-k">import</span> { useSceneTransition } <span class="c-k">from</span> <span class="c-s">"scree-react"</span>;
+
+<span class="c-k">const</span> { ref, run } = useSceneTransition({ effect: <span class="c-s">"pieces"</span> });
+
+&lt;div ref={ref}&gt;{tab === <span class="c-s">"a"</span> ? &lt;Dashboard /&gt; : &lt;Settings /&gt;}&lt;/div&gt;
+&lt;button onClick={() =&gt; run(() =&gt; setTab(<span class="c-s">"b"</span>))}&gt;Settings&lt;/button&gt;
+
+<span class="c-c">// data-scree="revenue" on both screens: that card</span>
+<span class="c-c">// flies to its new place as one piece</span></code></pre>
+          </div>
         </div>
         <dl class="stats">
           <div><dt>Transitions</dt><dd id="stat-effects">19</dd></div>
