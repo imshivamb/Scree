@@ -157,6 +157,12 @@ export class SurfaceRenderer implements ParticleRenderer {
     }
   }
 
+  warm(field: ParticleFieldBuffers): TargetImage[] {
+    const source = imageForTarget(field.source);
+    const destination = imageForTarget(field.destination);
+    return source && destination ? [source, destination] : [];
+  }
+
   setField(field: ParticleFieldBuffers): void {
     const source = imageForTarget(field.source);
     const destination = imageForTarget(field.destination);
