@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scree React scroll story</title>
+    <style>
+      html, body { margin: 0; background: #14110f; color: #ece4d8; font-family: system-ui, sans-serif; }
+      .intro, .outro { height: 70vh; display: grid; place-items: center; font-size: 2rem; }
+      .story { height: 500vh; position: relative; }
+      .pin { position: sticky; top: 0; height: 100vh; }
+      .readout { position: fixed; left: 16px; bottom: 16px; font: 12px monospace; opacity: 0.7; }
+    </style>
+  </head>
+  <body>
+    <div class="intro">Scroll</div>
+    <div id="root"></div>
+    <div class="outro">Done</div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

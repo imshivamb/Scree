@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "noEmit": false,
+    "outDir": "./dist",
+    "types": [],
+    "paths": { "scree-core": ["../../src/engine/index.ts"] }
+  },
+  "include": ["src"]
+}

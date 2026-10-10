@@ -34,6 +34,7 @@
     "test": "vitest run",
     "pack:check": "npm pack --dry-run",
     "check:effects": "node scripts/check-effects.mjs",
+    "build:react": "node scripts/build-react.mjs",
     "prepublishOnly": "npm test && npm run build:lib && npm run build:types"
   },
   "main": "./dist/scree.js",
