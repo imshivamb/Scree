@@ -4,6 +4,8 @@ export {
   createCubeTarget,
   createCylinderTarget,
   createDustTarget,
+  createElementTarget,
+  snapshotElement,
   createHelixTarget,
   createPyramidTarget,
   createImageTarget,
@@ -31,6 +33,9 @@ export {
 } from "./sources";
 export type {
   BaseTargetOptions,
+  DomGroup,
+  DomSnapshot,
+  DomSnapshotOptions,
   ImageTargetOptions,
   MeshTargetOptions,
   ParticleTarget,

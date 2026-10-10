@@ -86,6 +86,8 @@ export type {
 } from "./motion";
 export {
   createDustTarget,
+  createElementTarget,
+  snapshotElement,
   createImageTarget,
   createMeshTarget,
   createSphereTarget,

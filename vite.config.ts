@@ -14,6 +14,7 @@ export default defineConfig({
         studio: resolve(import.meta.dirname, "studio/index.html"),
         lab: resolve(import.meta.dirname, "lab/index.html"),
         labReact: resolve(import.meta.dirname, "lab/react/index.html"),
+        labDom: resolve(import.meta.dirname, "lab/dom/index.html"),
       },
     },
   },

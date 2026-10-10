@@ -7,6 +7,8 @@ export {
   loadParticleTargetFromUrl,
 } from "./from-image";
 export { createTextTarget, MAX_TEXT_CHARS } from "./from-text";
+export { createElementTarget, snapshotElement } from "./from-dom";
+export type { DomGroup, DomSnapshot, DomSnapshotOptions } from "./from-dom";
 export {
   createMeshTarget,
   createMeshTargetFromGeometry,
