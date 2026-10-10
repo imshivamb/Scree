@@ -1,6 +1,6 @@
 import type { MatchStrategy } from "../match";
 import { createScree, type Scree } from "../scene";
-import { createElementTarget } from "../sources/from-dom";
+import { createElementTarget, placeSnapshot, targetFromSnapshot } from "../sources/from-dom";
 import type { ParticleTarget } from "../sources/types";
 import type { StyleInput } from "../styles";
 
@@ -70,7 +70,9 @@ const backdrop = (element: Element) => seenColor(element.parentElement);
 /** What is seen on the element itself: the surface its content moves across. */
 const surfaceOf = (element: Element) => seenColor(element);
 
-function capture(element: HTMLElement, options: DomPrimeOptions, opaque = false): Promise<ParticleTarget> {
+type DomState = Awaited<ReturnType<typeof createElementTarget>>;
+
+function capture(element: HTMLElement, options: DomPrimeOptions, opaque = false): Promise<DomState> {
   return createElementTarget(element, {
     particleCount: PARTICLES,
     opaque,
@@ -81,7 +83,7 @@ function capture(element: HTMLElement, options: DomPrimeOptions, opaque = false)
 
 // ——— Captures made ahead of time ———
 
-type Primed = { target: Promise<ParticleTarget>; fresh: boolean; width: number; height: number; stop: () => void };
+type Primed = { target: Promise<DomState>; fresh: boolean; width: number; height: number; stop: () => void };
 const primed = new WeakMap<HTMLElement, Primed>();
 
 /**
@@ -95,7 +97,7 @@ export function primeDom(element: HTMLElement, options: DomPrimeOptions = {}): v
 }
 
 /** Keep a capture of the element as it is now: `known` when we already have one (the state a transition just landed on). */
-function remember(element: HTMLElement, options: DomPrimeOptions, known?: ParticleTarget): void {
+function remember(element: HTMLElement, options: DomPrimeOptions, known?: DomState): void {
   const existing = primed.get(element);
   if (existing?.fresh && !known) return;
   existing?.stop();
@@ -143,7 +145,7 @@ function remember(element: HTMLElement, options: DomPrimeOptions, known?: Partic
 }
 
 /** The primed capture if it still matches the element, else a fresh one. */
-function before(element: HTMLElement, options: DomPrimeOptions): Promise<ParticleTarget> {
+function before(element: HTMLElement, options: DomPrimeOptions): Promise<DomState> {
   const entry = primed.get(element);
   primed.delete(element);
   entry?.stop();
@@ -179,7 +181,7 @@ function overlayEngine() {
 }
 
 /** The old screen's picture, laid exactly over the element. */
-function coverWith(target: ParticleTarget, box: DOMRect): HTMLCanvasElement | null {
+function coverWith(target: DomState, box: DOMRect): HTMLCanvasElement | null {
   const picture = target.image?.element;
   if (!(picture instanceof HTMLCanvasElement)) return null;
   const cover = document.createElement("canvas");
@@ -266,7 +268,7 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
   }
 
   const shot = { scale: options.scale, background: options.background };
-  let from: ParticleTarget;
+  let from: DomState;
   try {
     from = await before(element, shot);
   } catch {
@@ -278,7 +280,8 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
   // is made and captured underneath, so the new screen never shows early.
   const previousOpacity = element.style.opacity;
   const previousTransition = element.style.transition;
-  const cover = coverWith(from, element.getBoundingClientRect());
+  const start = element.getBoundingClientRect();
+  const cover = coverWith(from, start);
   if (cover) document.body.appendChild(cover);
   element.style.transition = "none";
   element.style.opacity = "0";
@@ -295,10 +298,39 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
     throw error;
   }
   await frame();
-  const box = element.getBoundingClientRect();
-  let to: ParticleTarget;
+  const end = element.getBoundingClientRect();
+  let to: DomState;
+  let pair: [ParticleTarget, ParticleTarget];
+  let box: { left: number; top: number; width: number; height: number };
   try {
     to = await capture(element, shot, true);
+    // The element may have changed size or moved (a longer page, a scroll): put both
+    // states in the frame they share, each where it really sat, so nothing stretches.
+    const same =
+      Math.abs(start.left - end.left) < 0.5 &&
+      Math.abs(start.top - end.top) < 0.5 &&
+      Math.abs(start.width - end.width) < 0.5 &&
+      Math.abs(start.height - end.height) < 0.5;
+    if (same) {
+      pair = [from, to];
+      box = end;
+    } else {
+      const left = Math.min(start.left, end.left);
+      const top = Math.min(start.top, end.top);
+      box = {
+        left,
+        top,
+        width: Math.max(start.right, end.right) - left,
+        height: Math.max(start.bottom, end.bottom) - top,
+      };
+      // Outside each state's own box the frame stays empty: the live page shows there.
+      const place = (state: DomState, at: DOMRect) =>
+        targetFromSnapshot(
+          placeSnapshot(state.snapshot, { left: at.left - left, top: at.top - top, width: box.width, height: box.height }),
+          { particleCount: PARTICLES },
+        );
+      pair = [place(from, start), place(to, end)];
+    }
   } catch {
     // The change is made; without a picture of it, just show it.
     reveal();
@@ -322,12 +354,15 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
       width: `${width}px`,
       height: `${height}px`,
     });
+    // The element's own surface, where it is in both states.
     const style = getComputedStyle(element);
+    const inLeft = Math.max(start.left, end.left);
+    const inTop = Math.max(start.top, end.top);
     Object.assign(surface.style, {
-      left: `${box.left}px`,
-      top: `${box.top}px`,
-      width: `${box.width}px`,
-      height: `${box.height}px`,
+      left: `${inLeft}px`,
+      top: `${inTop}px`,
+      width: `${Math.max(0, Math.min(start.right, end.right) - inLeft)}px`,
+      height: `${Math.max(0, Math.min(start.bottom, end.bottom) - inTop)}px`,
       borderRadius: style.borderRadius,
       background: surfaceOf(element),
     });
@@ -335,8 +370,8 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
     engine.setEffect(options.effect ?? "pieces");
     if (options.match) engine.setMatch(options.match);
     engine.setStyle(options.look ?? "none");
-    engine.addTarget(ids[0], from);
-    engine.addTarget(ids[1], to);
+    engine.addTarget(ids[0], pair[0]);
+    engine.addTarget(ids[1], pair[1]);
     engine.prepareTransition(ids[0], ids[1], options.match);
     // The last run's pair is no longer on screen; let it go.
     for (const id of shared.ids) engine.removeTarget(id);

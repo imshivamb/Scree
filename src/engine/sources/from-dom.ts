@@ -228,12 +228,11 @@ export async function snapshotElement(
   return { canvas, width, height, groups };
 }
 
-/** A transition state made from live DOM: pieces and particles built from what the element looks like now. */
-export async function createElementTarget(
-  element: Element,
-  options: ImageTargetOptions & DomSnapshotOptions = {},
-): Promise<ParticleTarget & { groups: DomGroup[] }> {
-  const snapshot = await snapshotElement(element, options);
+/** A transition state from a snapshot: its pixels, exact aspect, marked groups, and "keep what did not change still". */
+export function targetFromSnapshot(
+  snapshot: DomSnapshot,
+  options: ImageTargetOptions = {},
+): ParticleTarget & { groups: DomGroup[]; snapshot: DomSnapshot } {
   const target = createImageTargetFromCanvas(snapshot.canvas, options);
   if (target.image) {
     // Sampling rounds the picture's size; restore the element's exact aspect so an overlay lands pixel for pixel.
@@ -251,5 +250,43 @@ export async function createElementTarget(
       v1: 1 - group.top / snapshot.height,
     }));
   }
-  return Object.assign(target, { groups: snapshot.groups });
+  return Object.assign(target, { groups: snapshot.groups, snapshot });
+}
+
+/**
+ * The same snapshot placed inside a larger frame (CSS pixels): drawn at `left`,
+ * `top`, with `background` around it (transparent by default, so nothing is drawn
+ * there). Two states of different sizes, each put in the frame both share, line
+ * up exactly where they sat on the page.
+ */
+export function placeSnapshot(
+  snapshot: DomSnapshot,
+  frame: { left: number; top: number; width: number; height: number },
+  background?: string,
+): DomSnapshot {
+  const scale = snapshot.canvas.width / snapshot.width;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(frame.width * scale));
+  canvas.height = Math.max(1, Math.round(frame.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("A canvas could not be created for the snapshot.");
+  if (background) {
+    context.fillStyle = background;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  context.drawImage(snapshot.canvas, Math.round(frame.left * scale), Math.round(frame.top * scale));
+  return {
+    canvas,
+    width: frame.width,
+    height: frame.height,
+    groups: snapshot.groups.map((group) => ({ ...group, left: group.left + frame.left, top: group.top + frame.top })),
+  };
+}
+
+/** A transition state made from live DOM: pieces and particles built from what the element looks like now. */
+export async function createElementTarget(
+  element: Element,
+  options: ImageTargetOptions & DomSnapshotOptions = {},
+): Promise<ParticleTarget & { groups: DomGroup[]; snapshot: DomSnapshot }> {
+  return targetFromSnapshot(await snapshotElement(element, options), options);
 }
