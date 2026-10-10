@@ -1,5 +1,8 @@
 import type { ParticleQuality } from "../motion";
 
+/** A named region of an image whose pieces should stay together, in unit coordinates (v up). */
+export type ImageGroup = { id: string; u0: number; v0: number; u1: number; v1: number };
+
 /** The real picture behind an image-based target, for effects that move pixels. */
 export type TargetImage = {
   /** Full-resolution element when available (sharper textures). */
@@ -8,6 +11,8 @@ export type TargetImage = {
   pixels: PixelSource;
   /** Where the whole image sits in world space (y up). */
   rect: { left: number; right: number; bottom: number; top: number };
+  /** Marked regions: a group present in both pictures travels as one block. */
+  groups?: ImageGroup[];
 };
 
 export type ParticleTarget = {

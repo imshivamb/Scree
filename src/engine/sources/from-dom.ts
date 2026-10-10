@@ -188,5 +188,14 @@ export async function createElementTarget(
 ): Promise<ParticleTarget & { groups: DomGroup[] }> {
   const snapshot = await snapshotElement(element, options);
   const target = await createImageTarget(snapshot.canvas.toDataURL("image/png"), options);
+  if (target.image) {
+    target.image.groups = snapshot.groups.map((group) => ({
+      id: group.id,
+      u0: group.left / snapshot.width,
+      u1: (group.left + group.width) / snapshot.width,
+      v0: 1 - (group.top + group.height) / snapshot.height,
+      v1: 1 - group.top / snapshot.height,
+    }));
+  }
   return Object.assign(target, { groups: snapshot.groups });
 }

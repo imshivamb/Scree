@@ -1,6 +1,6 @@
 import type { PieceCut } from "../effects/types";
 import { matchOrder, type MatchStrategy } from "../match";
-import type { ParticleTarget, TargetImage } from "../sources/types";
+import type { ImageGroup, ParticleTarget, TargetImage } from "../sources/types";
 import { cutUnitSquare, type Cut } from "./cut";
 
 /** Per-vertex buffers for the pieces mesh. Every piece's vertices sit next to each other. */
@@ -58,8 +58,12 @@ function pieceColor(image: TargetImage, cut: Cut, piece: number): [number, numbe
 }
 
 /** Piece centres and colours as a point target, so the usual matchers can pair pieces. */
-function pieceTarget(image: TargetImage, cut: Cut): { target: ParticleTarget; centers: Float32Array } {
+function pieceTarget(
+  image: TargetImage,
+  cut: Cut,
+): { target: ParticleTarget; centers: Float32Array; uvs: Float32Array } {
   const centers = new Float32Array(cut.count * 3);
+  const uvs = new Float32Array(cut.count * 2);
   const colors = new Float32Array(cut.count * 3);
   for (let piece = 0; piece < cut.count; piece += 1) {
     let u = 0;
@@ -69,6 +73,8 @@ function pieceTarget(image: TargetImage, cut: Cut): { target: ParticleTarget; ce
       u += cut.uv[base + vertex * 2] ?? 0;
       v += cut.uv[base + vertex * 2 + 1] ?? 0;
     }
+    uvs[piece * 2] = u / cut.vertsPerPiece;
+    uvs[piece * 2 + 1] = v / cut.vertsPerPiece;
     const [x, y] = toWorld(image.rect, u / cut.vertsPerPiece, v / cut.vertsPerPiece);
     centers[piece * 3] = x;
     centers[piece * 3 + 1] = y;
@@ -77,6 +83,7 @@ function pieceTarget(image: TargetImage, cut: Cut): { target: ParticleTarget; ce
   }
   return {
     centers,
+    uvs,
     target: {
       positions: centers,
       colors,
@@ -85,6 +92,102 @@ function pieceTarget(image: TargetImage, cut: Cut): { target: ParticleTarget; ce
       count: cut.count,
     },
   };
+}
+
+function subTarget(target: ParticleTarget, indices: number[]): ParticleTarget {
+  const pick = (source: Float32Array) => {
+    const out = new Float32Array(indices.length * 3);
+    indices.forEach((index, at) => out.set(source.subarray(index * 3, index * 3 + 3), at * 3));
+    return out;
+  };
+  return {
+    positions: pick(target.positions),
+    colors: pick(target.colors),
+    normals: new Float32Array(indices.length * 3),
+    seeds: new Float32Array(indices.length),
+    count: indices.length,
+  };
+}
+
+/**
+ * Keep marked regions whole. For every group present in both pictures, the
+ * pieces inside it go to the pieces inside its counterpart, each to the place
+ * with the same relative position. Everything else is paired by `strategy`
+ * from what is left, so the result is still a one-to-one pairing.
+ */
+function pairWithGroups(
+  source: TargetImage,
+  destination: TargetImage,
+  from: ReturnType<typeof pieceTarget>,
+  to: ReturnType<typeof pieceTarget>,
+  strategy: MatchStrategy,
+): Uint32Array {
+  const count = from.target.count;
+  const order = new Uint32Array(count);
+  const claimedFrom = new Uint8Array(count);
+  const claimedTo = new Uint8Array(count);
+  const inside = (uvs: Float32Array, index: number, g: ImageGroup, claimed: Uint8Array) => {
+    const u = uvs[index * 2] ?? 0;
+    const v = uvs[index * 2 + 1] ?? 0;
+    return !claimed[index] && u >= g.u0 && u <= g.u1 && v >= g.v0 && v <= g.v1;
+  };
+
+  const seen = new Set<string>();
+  for (const a of source.groups ?? []) {
+    const b = destination.groups?.find((candidate) => candidate.id === a.id);
+    if (!b || seen.has(a.id)) continue;
+    seen.add(a.id);
+    const relative = (uvs: Float32Array, index: number, g: ImageGroup): [number, number] => [
+      ((uvs[index * 2] ?? 0) - g.u0) / Math.max(1e-6, g.u1 - g.u0),
+      ((uvs[index * 2 + 1] ?? 0) - g.v0) / Math.max(1e-6, g.v1 - g.v0),
+    ];
+    const here: number[] = [];
+    const there: number[] = [];
+    for (let index = 0; index < count; index += 1) {
+      if (inside(from.uvs, index, a, claimedFrom)) here.push(index);
+      if (inside(to.uvs, index, b, claimedTo)) there.push(index);
+    }
+    // The smaller side picks first; the larger side keeps its extras for the rest.
+    const swap = here.length > there.length;
+    const small = swap ? there : here;
+    const large = [...(swap ? here : there)];
+    const [smallUvs, largeUvs, smallGroup, largeGroup] = swap
+      ? [to.uvs, from.uvs, b, a]
+      : [from.uvs, to.uvs, a, b];
+    for (const piece of small) {
+      const [rx, ry] = relative(smallUvs, piece, smallGroup);
+      let best = -1;
+      let bestDistance = Infinity;
+      for (let at = 0; at < large.length; at += 1) {
+        const [cx, cy] = relative(largeUvs, large[at] as number, largeGroup);
+        const distance = (cx - rx) ** 2 + (cy - ry) ** 2;
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          best = at;
+        }
+      }
+      if (best < 0) break;
+      const other = large.splice(best, 1)[0] as number;
+      const [src, dst] = swap ? [other, piece] : [piece, other];
+      order[src] = dst;
+      claimedFrom[src] = 1;
+      claimedTo[dst] = 1;
+    }
+  }
+
+  const restFrom: number[] = [];
+  const restTo: number[] = [];
+  for (let index = 0; index < count; index += 1) {
+    if (!claimedFrom[index]) restFrom.push(index);
+    if (!claimedTo[index]) restTo.push(index);
+  }
+  if (restFrom.length > 0) {
+    const rest = matchOrder(subTarget(from.target, restFrom), subTarget(to.target, restTo), strategy);
+    restFrom.forEach((piece, at) => {
+      order[piece] = restTo[rest[at] ?? at] ?? piece;
+    });
+  }
+  return order;
 }
 
 function hash(value: number): number {
@@ -103,7 +206,10 @@ export function buildPieces(
   const shared = cutUnitSquare(cut, (aspect(source) + aspect(destination)) / 2, 7);
   const from = pieceTarget(source, shared);
   const to = pieceTarget(destination, shared);
-  const order = matchOrder(from.target, to.target, strategy);
+  const grouped = Boolean(source.groups?.length && destination.groups?.length);
+  const order = grouped
+    ? pairWithGroups(source, destination, from, to, strategy)
+    : matchOrder(from.target, to.target, strategy);
 
   const count = shared.count;
   const perPiece = shared.vertsPerPiece;

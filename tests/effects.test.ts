@@ -121,6 +121,41 @@ describe("piece pairing", () => {
     expect(arrived / onBlock).toBeGreaterThan(0.7);
   });
 
+  it("keeps a marked group together, whatever the strategy", () => {
+    const block = (left: number) =>
+      image(64, 40, (x, y) => (x >= left && x < left + 16 && y >= 12 && y < 28 ? [40, 90, 230] : [235, 235, 235]));
+    const group = (left: number) => ({ id: "card", u0: left / 64, u1: (left + 16) / 64, v0: 1 - 28 / 40, v1: 1 - 12 / 40 });
+    const from = { ...block(4), groups: [group(4)] };
+    const to = { ...block(44), groups: [group(44)] };
+    const cut = { kind: "grid", columns: 16, rows: 10 } as const;
+
+    const pieces = buildPieces(from, to, cut, "random");
+    let inGroup = 0;
+    let together = 0;
+    let ordered = 0;
+    for (let vertex = 0; vertex < pieces.vertexCount; vertex += 6) {
+      const sx = pieces.srcCenter[vertex * 3] ?? 0;
+      const sy = pieces.srcCenter[vertex * 3 + 1] ?? 0;
+      const dx = pieces.dstCenter[vertex * 3] ?? 0;
+      if (sx > -0.85 && sx < -0.45 && Math.abs(sy) < 0.2) {
+        inGroup += 1;
+        if (dx > 0.3) together += 1;
+        // The left edge of the block stays the left edge.
+        if (sx < -0.7 && dx < 0.5) ordered += 1;
+      }
+    }
+    expect(inGroup).toBeGreaterThan(4);
+    expect(together / inGroup).toBeGreaterThan(0.95);
+    expect(ordered).toBeGreaterThan(0);
+
+    // Still a one-to-one pairing: every destination piece is used once.
+    const used = new Set<string>();
+    for (let vertex = 0; vertex < pieces.vertexCount; vertex += 6) {
+      used.add(`${pieces.dstCenter[vertex * 3]},${pieces.dstCenter[vertex * 3 + 1]}`);
+    }
+    expect(used.size).toBe(pieces.pieceCount);
+  });
+
   it("covers the source rect exactly at rest", () => {
     const flat = image(32, 20, () => [200, 200, 200]);
     const pieces = buildPieces(flat, flat, { kind: "triangles", density: 200, jitter: 0.4 }, "spatial");
