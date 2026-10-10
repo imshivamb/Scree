@@ -318,12 +318,12 @@ export type SceneTransitionOptions = Omit<DomTransitionOptions, "update">;
  * element that changes, then call `run(update)` where `update` makes the change
  * (set state, navigate); it is committed at once with `flushSync`. The element is captured before and after, the pieces
  * travel, and the live page is handed back. Elements marked `data-scree="name"`
- * in both states travel as one block. Without `await`, `run` still plays; with
- * reduced motion it only applies the change.
+ * in both states travel as one block. Quick repeated runs never drop a change:
+ * the playing transition hurries, then the next plays. With reduced motion it
+ * only applies the change.
  */
 export function useSceneTransition<T extends HTMLElement = HTMLDivElement>(defaults: SceneTransitionOptions = {}) {
   const ref = useRef<T>(null);
-  const running = useRef(false);
   const base = useRef(defaults);
   base.current = defaults;
   // Capture the first state once the page is quiet, so the first click is as quick as the rest.
@@ -339,27 +339,32 @@ export function useSceneTransition<T extends HTMLElement = HTMLDivElement>(defau
   }, []);
   const run = async (update: () => void | Promise<void>, options: SceneTransitionOptions = {}) => {
     const element = ref.current;
-    if (!element || running.current) {
+    if (!element) {
       await update();
       return;
     }
-    running.current = true;
-    try {
-      // React applies state later; commit it now so the "after" picture shows the new screen.
-      await transitionDom(element, { ...base.current, ...options, update: () => flushSync(update) });
-    } finally {
-      running.current = false;
-    }
+    // React applies state later; commit it now so the "after" picture shows the new screen.
+    // A run while another plays hurries the first and then plays, so no change goes unanimated.
+    await transitionDom(element, { ...base.current, ...options, update: () => flushSync(update) });
   };
   return { ref, run };
 }
+
+export type StageGoOptions = SceneTransitionOptions & {
+  /**
+   * The route key this navigation leads to (e.g. the href). With it, a request for
+   * where the stage already is or is already heading is ignored, and the
+   * transition waits for exactly that route. Recommended.
+   */
+  to?: string;
+};
 
 type StageContext = {
   /**
    * Play a navigation as a transition: the page freezes, `navigate` runs, and once
    * the new route has rendered (the stage's `routeKey` changes) its pieces travel in.
    */
-  go: (navigate: () => void, options?: SceneTransitionOptions) => Promise<void>;
+  go: (navigate: () => void, options?: StageGoOptions) => Promise<void>;
 };
 
 const Stage = createContext<StageContext | null>(null);
@@ -382,32 +387,48 @@ export type ScreeStageProps = SceneTransitionOptions & {
  */
 export function ScreeStage({ routeKey, timeoutMs = 2000, children, className, style, ...defaults }: ScreeStageProps) {
   const { ref, run } = useSceneTransition<HTMLDivElement>(defaults);
-  const arrived = useRef<(() => void) | null>(null);
+  /** Called when a route renders, with its key. */
+  const arrived = useRef<((key: string) => void) | null>(null);
+  /** Where the stage is heading: the last route asked for, or the current one. */
+  const heading = useRef(routeKey);
+  const current = useRef(routeKey);
+  current.current = routeKey;
 
-  // The new route is in the DOM: let the transition capture it.
+  // A route is in the DOM: let the transition capture it.
   useLayoutEffect(() => {
-    arrived.current?.();
-    arrived.current = null;
+    if (!arrived.current) heading.current = routeKey; // reached some other way (back, a plain link)
+    arrived.current?.(routeKey);
   }, [routeKey]);
 
   const value = useMemo<StageContext>(
     () => ({
-      go: (navigate, options) =>
-        run(
+      go: (navigate, { to, ...options } = {}) => {
+        if (to !== undefined) {
+          if (to === heading.current) return Promise.resolve();
+          heading.current = to;
+        }
+        return run(
           () =>
             new Promise<void>((resolve) => {
-              const timer = setTimeout(() => {
+              // Changes play one after another, so by now earlier routes have rendered.
+              if (to !== undefined && current.current === to) {
+                resolve();
+                return;
+              }
+              const done = () => {
+                clearTimeout(timer);
                 arrived.current = null;
                 resolve();
-              }, timeoutMs);
-              arrived.current = () => {
-                clearTimeout(timer);
-                resolve();
+              };
+              const timer = setTimeout(done, timeoutMs);
+              arrived.current = (key) => {
+                if (to === undefined || key === to) done();
               };
               navigate();
             }),
           options,
-        ),
+        );
+      },
     }),
     // `run` reads the latest options itself.
     // eslint-disable-next-line react-hooks/exhaustive-deps

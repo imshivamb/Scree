@@ -86,7 +86,7 @@ Live demo: [/interfaces](https://scree-tau.vercel.app/interfaces/). The overlay 
 
 Mark elements that should travel as one block with `data-scree="name"` in both states: `<div data-scree="revenue">` on the dashboard flies to the `revenue` card on the next screen. Reduced motion applies the change at once. Not captured: video frames, iframes and cross-origin images without CORS.
 
-For route changes in Next.js, wrap the layout in `<ScreeStage routeKey={usePathname()}>` and navigate with `useScreeStage().go(() => router.push(href))`; see [`examples/next`](examples/next).
+For route changes in Next.js, wrap the layout in `<ScreeStage routeKey={usePathname()}>` and navigate with `useScreeStage().go(() => router.push(href), { to: href })`; see [`examples/next`](examples/next).
 
 ```tsx
 const { ref, run } = useSceneTransition(); // scree-react

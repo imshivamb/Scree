@@ -91,14 +91,19 @@ const primed = new WeakMap<HTMLElement, Primed>();
  * `transitionDom` primes after every transition; call this once to prime the first.
  */
 export function primeDom(element: HTMLElement, options: DomPrimeOptions = {}): void {
+  remember(element, options);
+}
+
+/** Keep a capture of the element as it is now: `known` when we already have one (the state a transition just landed on). */
+function remember(element: HTMLElement, options: DomPrimeOptions, known?: ParticleTarget): void {
   const existing = primed.get(element);
-  if (existing?.fresh) return;
+  if (existing?.fresh && !known) return;
   existing?.stop();
 
   const box = element.getBoundingClientRect();
   if (box.width < 1 || box.height < 1) return;
   const entry: Primed = {
-    target: capture(element, options),
+    target: known ? Promise.resolve(known) : capture(element, options),
     fresh: true,
     width: Math.round(box.width),
     height: Math.round(box.height),
@@ -194,7 +199,19 @@ function coverWith(target: ParticleTarget, box: DOMRect): HTMLCanvasElement | nu
   return cover;
 }
 
-let running: Promise<void> = Promise.resolve();
+/** A new request while one plays: finish what is left this fast, then go on. */
+const HURRY_MS = 160;
+
+type Request = {
+  element: HTMLElement;
+  options: DomTransitionOptions;
+  resolve: () => void;
+  reject: (error: unknown) => void;
+};
+const queue: Request[] = [];
+let draining = false;
+/** Set when a request arrives while a transition plays; the playing one speeds up to finish. */
+let rush = false;
 
 /**
  * Play a change to the page as a Scree transition. The element is captured
@@ -202,12 +219,43 @@ let running: Promise<void> = Promise.resolve();
  * then the live DOM is handed back, so focus, scroll and state are untouched.
  * Elements marked `data-scree="name"` in both states travel as one block.
  * With reduced motion, or if anything cannot be captured, the change is just applied.
- * Transitions on the page run one after another.
+ *
+ * A change requested while another plays is never dropped: the playing one
+ * hurries to its end, then the new one plays. Several quick changes to the same
+ * element are applied in order and played as one, to the latest state.
  */
 export function transitionDom(element: HTMLElement, options: DomTransitionOptions): Promise<void> {
-  const next = running.then(() => play(element, options));
-  running = next.catch(() => undefined);
-  return next;
+  return new Promise<void>((resolve, reject) => {
+    queue.push({ element, options, resolve, reject });
+    if (draining) rush = true;
+    else void drain();
+  });
+}
+
+async function drain(): Promise<void> {
+  draining = true;
+  try {
+    while (queue.length > 0) {
+      const first = queue[0] as Request;
+      const batch: Request[] = [];
+      while (queue.length > 0 && queue[0]?.element === first.element) batch.push(queue.shift() as Request);
+      const last = batch[batch.length - 1] as Request;
+      rush = false;
+      try {
+        await play(first.element, {
+          ...last.options,
+          update: async () => {
+            for (const request of batch) await request.options.update();
+          },
+        });
+        for (const request of batch) request.resolve();
+      } catch (error) {
+        for (const request of batch) request.reject(error);
+      }
+    }
+  } finally {
+    draining = false;
+  }
 }
 
 async function play(element: HTMLElement, options: DomTransitionOptions): Promise<void> {
@@ -262,6 +310,7 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
   const { canvas, surface, engine } = shared;
   shared.runs += 1;
   const ids = [`scree-dom-${shared.runs}-from`, `scree-dom-${shared.runs}-to`] as const;
+  let landed = false;
   try {
     // The canvas is the element's box grown by SPREAD about its centre; the framing
     // shrinks by the same factor, so the picture still lands on the element exactly.
@@ -301,22 +350,31 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
     await frame();
     cover?.remove();
 
-    const total = (options.durationSeconds ?? DURATION) * 1000;
-    const started = performance.now();
+    // Time runs at 1 / duration; when another change is waiting it speeds up so
+    // what is left takes HURRY_MS. The motion never jumps, it just finishes sooner.
+    let rate = 1 / ((options.durationSeconds ?? DURATION) * 1000);
+    let t = 0;
+    let last = performance.now();
     await new Promise<void>((resolve) => {
       const step = () => {
-        const t = Math.min(1, (performance.now() - started) / total);
+        const now = performance.now();
+        if (rush) rate = Math.max(rate, (1 - t) / HURRY_MS);
+        t = Math.min(1, t + (now - last) * rate);
+        last = now;
         engine.setProgress(ease(t));
         if (t < 1) requestAnimationFrame(step);
         else resolve();
       };
       requestAnimationFrame(step);
     });
+    landed = true;
   } finally {
     reveal();
     canvas.remove();
     surface.remove();
     engine.setPaused(true);
-    idle(() => primeDom(element, shot));
+    // The page now shows exactly the picture we landed on: keep it for the next change.
+    if (landed) remember(element, shot, to);
+    else idle(() => primeDom(element, shot));
   }
 }

@@ -94,7 +94,7 @@ export function Shell({ children }) {
 function Nav() {
   const router = useRouter();
   const { go } = useScreeStage();
-  return <a href="/orders" onClick={(e) => { e.preventDefault(); go(() => router.push("/orders")); }}>Orders</a>;
+  return <a href="/orders" onClick={(e) => { e.preventDefault(); go(() => router.push("/orders"), { to: "/orders" }); }}>Orders</a>;
 }
 ```
 

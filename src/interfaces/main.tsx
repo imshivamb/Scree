@@ -1,4 +1,4 @@
-import { StrictMode, useState } from "react";
+import { StrictMode, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useSceneTransition } from "scree-react";
 import { inject } from "@vercel/analytics";
@@ -140,8 +140,11 @@ function App() {
   const [effect, setEffect] = useState("pieces");
   const { ref, run } = useSceneTransition<HTMLDivElement>();
 
+  // Compare with where we are heading, not what is rendered: quick clicks queue up.
+  const heading = useRef<Screen>("overview");
   const go = (next: Screen) => {
-    if (next === screen) return;
+    if (next === heading.current) return;
+    heading.current = next;
     void run(() => setScreen(next), { effect });
   };
 

@@ -10,5 +10,5 @@ npm run dev
 How it is wired (`app/shell.tsx`):
 
 1. `<ScreeStage routeKey={usePathname()}>` wraps the part of the layout that changes.
-2. Links call `useScreeStage().go(() => router.push(href))` instead of navigating directly.
+2. Links call `useScreeStage().go(() => router.push(href), { to: href })` instead of navigating directly. `to` lets quick clicks queue up correctly.
 3. Scree freezes the current page, waits for the new route to render, captures it and plays the transition. Back/forward and modifier clicks navigate normally.

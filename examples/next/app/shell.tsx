@@ -17,9 +17,10 @@ function ScreeLink({ href, children }: { href: string; children: ReactNode }) {
   const pathname = usePathname();
   const { go } = useScreeStage();
   const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0 || href === pathname) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
     event.preventDefault();
-    void go(() => router.push(href));
+    // `to` lets quick clicks queue correctly and ignores a click on where you already are.
+    void go(() => router.push(href), { to: href });
   };
   return (
     <Link href={href} onClick={onClick} aria-current={pathname === href ? "page" : undefined}>
