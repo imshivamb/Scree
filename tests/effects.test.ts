@@ -156,6 +156,36 @@ describe("piece pairing", () => {
     expect(used.size).toBe(pieces.pieceCount);
   });
 
+  it("keeps what did not change perfectly still on an interface", () => {
+    const screen = (left: number) =>
+      image(64, 40, (x, y) => (x >= left && x < left + 16 && y >= 12 && y < 28 ? [40, 90, 230] : [235, 235, 235]));
+    const from = { ...screen(4), still: true };
+    const to = { ...screen(44), still: true };
+    const pieces = buildPieces(from, to, { kind: "grid", columns: 16, rows: 10 }, "transport");
+    let pinned = 0;
+    let movedWhilePinned = 0;
+    let blockPinned = 0;
+    for (let vertex = 0; vertex < pieces.vertexCount; vertex += 6) {
+      if ((pieces.keysB[vertex * 4 + 3] ?? 0) < 0.5) continue;
+      pinned += 1;
+      const dx = (pieces.dstCenter[vertex * 3] ?? 0) - (pieces.srcCenter[vertex * 3] ?? 0);
+      const dy = (pieces.dstCenter[vertex * 3 + 1] ?? 0) - (pieces.srcCenter[vertex * 3 + 1] ?? 0);
+      if (Math.hypot(dx, dy) > 1e-6) movedWhilePinned += 1;
+      // Pieces where the block was or went changed, so they must not be pinned.
+      const sx = pieces.srcCenter[vertex * 3] ?? 0;
+      const sy = pieces.srcCenter[vertex * 3 + 1] ?? 0;
+      if (Math.abs(sy) < 0.2 && ((sx > -0.85 && sx < -0.45) || (sx > 0.4 && sx < 0.8))) blockPinned += 1;
+    }
+    // Most of the screen is plain background that did not change.
+    expect(pinned / pieces.pieceCount).toBeGreaterThan(0.6);
+    expect(movedWhilePinned).toBe(0);
+    expect(blockPinned).toBe(0);
+
+    // Pictures that do not ask for it keep the old behaviour.
+    const loose = buildPieces(screen(4), screen(44), { kind: "grid", columns: 16, rows: 10 }, "transport");
+    for (let vertex = 0; vertex < loose.vertexCount; vertex += 6) expect(loose.keysB[vertex * 4 + 3]).toBe(0);
+  });
+
   it("covers the source rect exactly at rest", () => {
     const flat = image(32, 20, () => [200, 200, 200]);
     const pieces = buildPieces(flat, flat, { kind: "triangles", density: 200, jitter: 0.4 }, "spatial");

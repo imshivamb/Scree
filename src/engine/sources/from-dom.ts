@@ -241,6 +241,8 @@ export async function createElementTarget(
     const middle = (rect.top + rect.bottom) / 2;
     const half = ((rect.right - rect.left) * (snapshot.height / snapshot.width)) / 2;
     target.image.rect = { ...rect, top: middle + half, bottom: middle - half };
+    // An interface: what did not change between two states should not move.
+    target.image.still = true;
     target.image.groups = snapshot.groups.map((group) => ({
       id: group.id,
       u0: group.left / snapshot.width,

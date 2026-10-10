@@ -142,7 +142,7 @@ function App() {
 
   const go = (next: Screen) => {
     if (next === screen) return;
-    void run(() => setScreen(next), { effect, durationSeconds: 1.5 });
+    void run(() => setScreen(next), { effect });
   };
 
   return (

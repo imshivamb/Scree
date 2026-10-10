@@ -13,6 +13,8 @@ export type TargetImage = {
   rect: { left: number; right: number; bottom: number; top: number };
   /** Marked regions: a group present in both pictures travels as one block. */
   groups?: ImageGroup[];
+  /** Pin what did not change: when both pictures set this, pieces that look the same in place stay still. */
+  still?: boolean;
 };
 
 export type ParticleTarget = {

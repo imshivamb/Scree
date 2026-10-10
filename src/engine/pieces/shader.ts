@@ -22,7 +22,7 @@ attribute vec2 aDstUv;
 attribute vec3 aSrcCenter;
 attribute vec3 aDstCenter;
 attribute vec4 aKeysA; // seed, random, x, y
-attribute vec4 aKeysB; // radial, travel, index, -
+attribute vec4 aKeysB; // radial, travel, index, still
 
 varying vec2 vSrcUv;
 varying vec2 vDstUv;
@@ -110,8 +110,9 @@ void main() {
   vDstUv = aDstUv;
   vSwap = smoothstep(uSwap.x, uSwap.y, local);
 
-  // Rest frames are exact: every piece sits precisely in its image.
-  if (local <= 0.0 || local >= 1.0) {
+  // Rest frames are exact: every piece sits precisely in its image. A piece that
+  // did not change (aKeysB.w) stays at rest the whole way.
+  if (local <= 0.0 || local >= 1.0 || aKeysB.w > 0.5) {
     vFlight = 0.0;
     vNormal = vec3(0.0, 0.0, 1.0);
     vec3 rest = local <= 0.0 ? position : aDstPosition;

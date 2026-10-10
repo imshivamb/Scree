@@ -15,7 +15,7 @@ export type PieceGeometry = {
   dstCenter: Float32Array; // vec3
   /** seed, random, x, y — the stagger keys that don't depend on the pairing. */
   keysA: Float32Array; // vec4
-  /** radial, travel, index, unused. */
+  /** radial, travel, index, still (1 when the piece did not change and must not move). */
   keysB: Float32Array; // vec4
 };
 
@@ -121,11 +121,20 @@ function pairWithGroups(
   from: ReturnType<typeof pieceTarget>,
   to: ReturnType<typeof pieceTarget>,
   strategy: MatchStrategy,
+  fixed?: Uint8Array,
 ): Uint32Array {
   const count = from.target.count;
   const order = new Uint32Array(count);
   const claimedFrom = new Uint8Array(count);
   const claimedTo = new Uint8Array(count);
+  if (fixed) {
+    for (let index = 0; index < count; index += 1) {
+      if (!fixed[index]) continue;
+      order[index] = index;
+      claimedFrom[index] = 1;
+      claimedTo[index] = 1;
+    }
+  }
   const inside = (uvs: Float32Array, index: number, g: ImageGroup, claimed: Uint8Array) => {
     const u = uvs[index * 2] ?? 0;
     const v = uvs[index * 2 + 1] ?? 0;
@@ -190,6 +199,64 @@ function pairWithGroups(
   return order;
 }
 
+/** Shared groups: present in both pictures under the same id. */
+function sharedGroups(source: TargetImage, destination: TargetImage): ImageGroup[] {
+  const ids = new Set((destination.groups ?? []).map((group) => group.id));
+  return [...(source.groups ?? []), ...(destination.groups ?? [])].filter((group) => ids.has(group.id) && source.groups?.some((g) => g.id === group.id));
+}
+
+/**
+ * Pieces that look the same in both pictures, in the same place: on an interface
+ * these are the parts that did not change, and they must not move. Pieces of a
+ * marked group that is travelling are never pinned, so the group stays whole.
+ */
+function unchangedPieces(source: TargetImage, destination: TargetImage, cut: Cut, uvs: Float32Array): Uint8Array {
+  const fixed = new Uint8Array(cut.count);
+  const groups = sharedGroups(source, destination);
+  const sample = (image: TargetImage, u: number, v: number, channel: number) => {
+    const { width, height, data } = image.pixels;
+    const x = Math.min(width - 1, Math.max(0, Math.floor(u * width)));
+    const y = Math.min(height - 1, Math.max(0, Math.floor((1 - v) * height)));
+    const offset = (y * width + x) * 4;
+    return ((data[offset + channel] ?? 0) * (data[offset + 3] ?? 0)) / 255;
+  };
+  const GRID = 5;
+  const TOLERANCE = 10;
+  for (let piece = 0; piece < cut.count; piece += 1) {
+    const cu = uvs[piece * 2] ?? 0;
+    const cv = uvs[piece * 2 + 1] ?? 0;
+    if (groups.some((g) => cu >= g.u0 && cu <= g.u1 && cv >= g.v0 && cv <= g.v1)) continue;
+    let u0 = 1;
+    let v0 = 1;
+    let u1 = 0;
+    let v1 = 0;
+    const base = piece * cut.vertsPerPiece * 2;
+    for (let vertex = 0; vertex < cut.vertsPerPiece; vertex += 1) {
+      const u = cut.uv[base + vertex * 2] ?? 0;
+      const v = cut.uv[base + vertex * 2 + 1] ?? 0;
+      u0 = Math.min(u0, u);
+      u1 = Math.max(u1, u);
+      v0 = Math.min(v0, v);
+      v1 = Math.max(v1, v);
+    }
+    let same = true;
+    for (let gy = 0; gy < GRID && same; gy += 1) {
+      for (let gx = 0; gx < GRID && same; gx += 1) {
+        const u = u0 + ((gx + 0.5) / GRID) * (u1 - u0);
+        const v = v0 + ((gy + 0.5) / GRID) * (v1 - v0);
+        for (let channel = 0; channel < 3; channel += 1) {
+          if (Math.abs(sample(source, u, v, channel) - sample(destination, u, v, channel)) > TOLERANCE) {
+            same = false;
+            break;
+          }
+        }
+      }
+    }
+    if (same) fixed[piece] = 1;
+  }
+  return fixed;
+}
+
 function hash(value: number): number {
   const s = Math.sin(value * 127.1 + 311.7) * 43758.5453;
   return s - Math.floor(s);
@@ -207,9 +274,11 @@ export function buildPieces(
   const from = pieceTarget(source, shared);
   const to = pieceTarget(destination, shared);
   const grouped = Boolean(source.groups?.length && destination.groups?.length);
-  const order = grouped
-    ? pairWithGroups(source, destination, from, to, strategy)
-    : matchOrder(from.target, to.target, strategy);
+  const fixed = source.still && destination.still ? unchangedPieces(source, destination, shared, from.uvs) : undefined;
+  const order =
+    grouped || fixed
+      ? pairWithGroups(source, destination, from, to, strategy, fixed)
+      : matchOrder(from.target, to.target, strategy);
 
   const count = shared.count;
   const perPiece = shared.vertsPerPiece;
@@ -265,7 +334,10 @@ export function buildPieces(
       geometry.srcCenter.set([sx, sy, 0], at * 3);
       geometry.dstCenter.set([dx, dy, 0], at * 3);
       geometry.keysA.set([hash(piece + 0.5), hash(piece * 3.7 + 1.3), nx, ny], at * 4);
-      geometry.keysB.set([radial, (travel[piece] ?? 0) / maxTravel, piece / Math.max(1, count - 1), 0], at * 4);
+      geometry.keysB.set(
+        [radial, (travel[piece] ?? 0) / maxTravel, piece / Math.max(1, count - 1), fixed?.[piece] ? 1 : 0],
+        at * 4,
+      );
     }
   }
   return geometry;

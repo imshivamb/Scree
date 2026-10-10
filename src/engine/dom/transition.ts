@@ -11,6 +11,7 @@ export type DomTransitionOptions = {
   effect?: string;
   match?: MatchStrategy;
   look?: StyleInput;
+  /** Default 0.85 s: an interface should feel quick. */
   durationSeconds?: number;
   /** Paint behind transparent areas. Default: the nearest background behind the element. */
   background?: string;
@@ -24,10 +25,16 @@ export type DomPrimeOptions = Pick<DomTransitionOptions, "background" | "scale">
 const SPREAD = 1.3;
 /** Interface pieces are big; a light point field keeps capture fast. Shared by every overlay. */
 const PARTICLES = 64 * 64;
+/** Interfaces should feel quick: long enough to follow each piece, short enough not to wait for. */
+const DURATION = 0.85;
 /** After the element changes, wait this long for hover fades and the like to settle before capturing. */
 const SETTLE_MS = 260;
 
-const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+/**
+ * Moves at once and settles softly: after a click the motion should answer straight
+ * away. Each piece eases in its own flight, so the start is never abrupt.
+ */
+const ease = (t: number) => 1 - (1 - t) * (1 - t);
 const frame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 const idle = (callback: () => void) =>
   typeof requestIdleCallback === "function" ? requestIdleCallback(callback, { timeout: 500 }) : setTimeout(callback, 50);
@@ -294,7 +301,7 @@ async function play(element: HTMLElement, options: DomTransitionOptions): Promis
     await frame();
     cover?.remove();
 
-    const total = (options.durationSeconds ?? 1.4) * 1000;
+    const total = (options.durationSeconds ?? DURATION) * 1000;
     const started = performance.now();
     await new Promise<void>((resolve) => {
       const step = () => {
